@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>D3 Test</title>
+		<script type="text/javascript" src="d3/d3.js"></script>
+	</head>
+	<body>
+    <script type="text/javascript">
+			//setup
+			var dt = 1500
+			var xRange = 500;
+			var yRange = 500;
+			var svg = d3.select("body")
+									.append("svg")
+									.attr("height", xRange)
+									.attr("width", yRange);
+
+			function getData() {
+				var dataset = [];
+				var numOfDataPoints = 100;
+				for (var i = 0; i < numOfDataPoints; i++) {
+					var newX = Math.random() * xRange;
+					var newY = Math.random() * yRange;
+					dataset.push({"x": newX, "y": newY});
+				}
+				return dataset;
+			}
+
+			function update(data) {
+				//join
+				circles = svg.selectAll("circle")
+											.data(data);
+				//update
+				circles.transition().duration(dt).ease("linear")
+						.attr("cx", function(d) {
+								return d.x;
+						})
+						.attr("cy", function(d) {
+								return d.y;
+						});
+				//enter
+				circles.enter().append("circle")
+						.attr("r", 0)
+						.attr("cx", xRange/2)
+						.attr("cy", yRange/2)
+						.attr("fill", "#22f")
+						.attr("stroke", "#f22")
+						.attr("stroke-width", 0)
+					.transition().duration(dt).ease("linear")
+						.attr("r", 10)
+						.attr("cx", function(d) {
+								return d.x;
+						})
+						.attr("cy", function(d) {
+								return d.y;
+						})
+						.attr("stroke-width", 1);
+				//no need to reomove since data same size
+			}
+
+			//initial display
+			update(getData);
+			setInterval(function() {
+						update(getData());
+					}, dt);
+
+    </script>
+  </body>
+</html>
