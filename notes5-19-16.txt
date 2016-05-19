@@ -1,0 +1,12 @@
+For Henry to learn:
+  -maps
+    -zoom, clicks
+  -transitions
+  -joins
+    -data manipulations
+  -scrolling text
+
+Ideas for the final product:
+  -Hail storm warnings
+  -twitter scrolling/alerts (#CAweather)
+  -alerts for weather patterns outside of original prediction
