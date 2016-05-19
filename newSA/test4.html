@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+
+	<head>		
+		<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+		<meta http-equiv="refresh" content="3600">
+		<title>hnxSA</title>
+<script data-main="main2.js" src="require.js"></script>
+
+/*Notice the colorbar= parameter. (http://scifari.org/colortable/matplotlib-1.2.1/rainbow/16[]?output=json). In this case, we are drawing in a matplotlib color schema from a 3rd party service. You can use the service too, please browse colors here: http://scifari.org/colortable/matplotlib-1.2.1/?output=json and some examples: http://scifari.org/colortable/
+If you wish to, pass in a custom colorbar as a comma separated string of hex colors (i.e. "#ff0000,#00ff00,#00000ff")*/ 
+</head>
+
+<body>
+
+<div data-viz-type="plot.xyz" 
+xdata="http://hnx-s-001:18080/data/FcstMaxT.nc/longitude[]" 
+xmask="[100000002004087730000]" 
+xlabel="lon" 
+ydata="http://hnx-s-001:18080/data/FcstMaxT.nc/latitude[]" 
+ylabel="lat" 
+zdata="http://hnx-s-001:18080/data/FcstMaxT.nc/MaxT_SFC[]" 
+zmask="[-32767,-1]" 
+zlabel="MaxT" 
+class="widgetxyz" 
+format="flat" 
+xrange="[-180,180]" 
+yrange="[-90,90]" 
+xlimit="[-124,-117]" 
+ylimit="[33,39]"
+colorbar="http://scifari.org/colortable/matplotlib-1.2.1/rainbow/64[]?output=json"></div>
+
+
+</body>
+</html>
+
+

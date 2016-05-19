@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+
+	<head>		
+		<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+		<meta http-equiv="refresh" content="3600">
+		<title>hnxSA</title>
+		<script type="text/javascript" src="d3/d3.v3.js"></script>
+		<script type="text/javascript" src="d3/topojson.v1.min.js"></script>
+		<script type="text/javascript" src="d3/togeojson.js"></script>
+		<style type="text/css">
+
+rect {
+  fill: none;
+  pointer-events: all;
+}
+
+			body
+			{	
+				height: 100%;
+				width: 100%;
+				margin: 0;
+				float: left;
+				background-color:white;
+				overflow:hidden;
+			}
+
+			div#map
+			{
+				position:absolute;
+				top:0%;
+				left:5%;
+				height:100%;
+				width:100%;
+				fill:green;
+ 				fill-opacity:70%;
+				stroke-width: .5px;
+				stroke:gray;
+				stroke-opacity:50%;
+				z-index:-100;
+				pointer-events: all;
+			}
+
+			.zoom {
+				fill: #ccc;
+				cursor: pointer;
+			}
+
+			.zoom.active {
+				fill: gray;
+			}
+
+			.mesh {
+				fill: none;
+				stroke: #fff;
+				stroke-linejoin: round;
+			}
+
+
+			div#info
+			{
+				position:absolute;
+				top:5%;
+				left:55%;
+				height:100%;
+				width:45%;
+				fill:white;
+ 				fill-opacity:10%;
+				stroke:black;
+				stroke-opacity:100%;
+				z-index:-1000;			
+			}
+
+			.infoText
+			{
+				stroke:black;
+				stroke-width:1;
+				fill:black;
+				fill-opacity:100%;
+				font-size:200%;
+			}
+
+			.mappedStationMarker
+			{
+				cursor: pointer;			
+			}
+
+			.mappedStationText
+			{
+				stroke:black;
+				stroke-width:1;
+				fill:black;
+				fill-opacity:100%;
+				font-size:90%;
+			}
+
+
+			.currentMappedStation
+			{					
+				fill:yellow;
+				fill-opacity:50%;
+				stroke:yellow;
+				stroke-width:2;
+			}
+
+			.most
+			{					
+				
+				fill-opacity:65%;
+				stroke:red;
+				stroke-width:2;
+			}
+
+			.currentMappedStationText
+			{	
+				stroke:black;
+				stroke-width:0;
+				fill:black;
+				fill-opacity:100%;
+				font-size:55%;
+			}
+			.currentFire
+			{					
+				fill:red;
+				fill-opacity:70%;
+				stroke:yellow;
+				stroke-width:2;
+			}
+
+			.currentFireText
+			{	
+				stroke:black;
+				stroke-width:0;
+				fill:black;
+				fill-opacity:100%;
+				font-size:105%;
+			}	
+		</style>
+
+	</head>
+
+<body> 
+
+<div id="map"></div>
+<div id="info"></div>
+
+    <script type="text/javascript">
+
+	//start global variables
+	var width = screen.width
+	var height = screen.height
+	var active
+	var activePoint
+
+	var JsonToMap
+	var b,s,t;
+	var projection = d3.geo.mercator().scale(1).translate([0, 0])
+	var cwaPath = d3.geo.path().projection(projection)	
+	var scaleFactor = .9 //1=100% .5=50%, etc.
+	var zoomTime = 1000
+
+
+	var map = d3.select("#map").append("svg")	
+		.attr("width", "100%")
+		.attr("height", "100%")
+
+	map.append("rect")
+		.attr("width", width)
+		.attr("height", height)
+		.on("click", reset);
+
+	var g = map.append("g")	
+
+	var info = d3.select("#info").append("svg")	
+		.attr("width", "100%")
+		.attr("height", "100%")
+
+	var infoG = info.append("g")
+
+	var fireRss = "ba-simple-proxy/ba-simple-proxy.php?&url=http://inciweb.org/feeds/rss/incidents/state/5&mode=native"
+	var fireJson
+
+	var obsUrl = "ba-simple-proxy/ba-simple-proxy.php?&url=http://www.wrh.noaa.gov/hnx/JimBGmwXJList.php?extents=34.74,-121.3,38.5,-117.62&mode=native"
+	//var obsUrl = "ba-simple-proxy/ba-simple-proxy.php?&url=http://www.wrh.noaa.gov/hnx/JimBGmwXJList.php?extents=36.74,-119.8,38.5,-118.62&mode=native"
+	//var obsUrl = "ba-simple-proxy/ba-simple-proxy.php?&url=http://www.wrh.noaa.gov/hnx/JimBGmwXJList.php?extents=36.16,-119.8,36.56,-119.3&mode=native"
+
+	var jsonObs
+
+	var parm1="Temp"
+	var parm2="elev"
+
+	var rawsParms =["AccPrecip","Ceiling",
+                        "Date","Dewp","FuelMoist","FuelTemp","Gust","GustHi24",
+                        "RawsRelh12","RawsRelh13","RawsRelh14",
+                        "RawsTemp12","RawsTemp13","RawsTemp14",
+                        "Relh","RelhHi24","RelhLo24",
+                        "Temp","TempC","TempHi24","TempLo24",
+                        "Windd","Winds",
+                        "a1hrPrecip","a3hrPrecip","a6hrPrecip","a24hrPrecip","distance","elev","id","latitude","link","longitude","name","provider","stnid"]
+
+	var asosParms =["Altimeter","Clouds",
+                        "Date","Dewp","GustHi24",
+                        "RawsRelh12","RawsRelh13","RawsRelh14",
+                        "RawsTemp12","RawsTemp13","RawsTemp14",
+                        "Relh","RelhHi24","RelhLo24","SLP",
+                        "Temp","TempC","TempHi24","TempLo24",
+                        "Visibility","Weather",
+                        "Windd","Winds","Wx",
+                        "distance","elev","id","latitude","link","longitude","name","provider","stnid"]
+
+	var textOnlyParms =["Ceiling","Clouds","Date","Weather","Wx","id","link","name","provider"]
+
+	var numberOfJsonObs
+	var sortedJsonObs
+
+	var dwellTime=1000000
+
+
+	var tempColor = d3.scale.threshold()
+			.domain([32,40,50,60,70])
+			.range(["white", "blue", "green", "yellow", "orange", "red"]);
+
+	var windColor = d3.scale.threshold()
+			.domain([0,5,30,50,100])
+			.range(["white", "blue", "green", "yellow", "orange", "red"]);
+
+/*
+//from http://bl.ocks.org/mbostock/3795040
+var λ = d3.scale.linear()
+    .domain([0, width])
+    .range([-180, 180]);
+
+var φ = d3.scale.linear()
+    .domain([0, height])
+    .range([90, -90]);
+
+map.on("mousemove", function() {
+  var p = d3.mouse(this);
+  projection.rotate([λ(p[0]), φ(p[1])]);
+  map.selectAll("path").attr("d", path);
+});
+*/
+
+//  from http://bl.ocks.org/mbostock/6242308
+
+
+
+
+	//end global variables
+
+	//start functions
+
+function loadCwaMap()
+{
+	//project to bounding box http://bl.ocks.org/mbostock/4707858
+	//zoom to bounding box http://bl.ocks.org/mbostock/4699541
+	//d3.json("CWAs.json", function(error, us) 
+	d3.json("CAzones.json", function(error, us) 
+	{
+		                  //.mesh/feature
+		JsonToMap = topojson.mesh(us, us.objects.cazones)
+
+		getBST(JsonToMap)
+		projection.scale(s).translate(t);
+
+		g.selectAll("path")
+			.data(topojson.feature(us, us.objects.cazones).features)
+			.enter().append("path")
+			.attr("id",  function(d) { return d.id; })
+			.attr("zone",  function(d) { return d.properties.ZONE; })
+			.attr("class", "zoom")
+			.attr("d", cwaPath)
+			.on("click", zoomToCWA);
+	}
+	);
+}
+
+
+function zoomToPoint(d)
+{
+	st=getLST(d)
+	zoomTo(st[0],st[1])
+	if (activePoint === d) return reset();
+	g.selectAll(".active").classed("activePoint", false);
+	d3.select(this).classed("active", activePoint = d);
+}
+
+function getLST(d) //Boundingbox, Scale, Transform
+{
+	lon=projection([d.longitude, d.latitude])[0]
+	lat=projection([d.longitude, d.latitude])[1]
+	sf = scaleFactor / Math.max( (lon/width, lat/height))   //calculate scale based on ratio of bounding box to screen dimensions
+	console.log("scale factor: ",sf)
+	//s=50
+	s=sf*5
+	t=[width/2 -lon*s,height/2-lat*s]
+	return[t,s]
+}
+
+function zoomTo(trans, scale) 
+{ 	
+	g.transition().duration(zoomTime).attr("transform","translate(" + trans + ")"+ "scale(" + scale + ")" )
+}
+
+function getBST(JsonToMap) //Boundingbox, Scale, Transform
+{
+	b = cwaPath.bounds(JsonToMap)								      //compute bounding box b of JsonToMap (d) 
+	s = scaleFactor / Math.max( (b[1][0] - b[0][0]) / (width), (b[1][1] - b[0][1]) / (height) )   //calculate scale based on ratio of bounding box to screen dimensions
+	t = [(width - s * (b[1][0] + b[0][0])) / 2, (height - s * (b[1][1] + b[0][1])) / 2] 	      //translate to center of bounding box
+	return[t,s]
+}
+
+function zoomToCWA(d)
+{
+	st=getBST(d)
+	zoomTo(st[0],st[1])
+	if (active === d) return reset();
+	g.selectAll(".active").classed("active", false);
+	d3.select(this).classed("active", active = d);
+}
+
+function reset() 
+{
+	console.log("reset")
+	g.selectAll(".active").classed("active", active = false);
+	g.transition().duration(zoomTime).attr("transform", "");
+}
+
+
+	function getData()
+	{
+		d3.json(obsUrl, function(error, d)
+					{	
+					if (error) return console.log("there was an error loading the data: " + error)	
+						jsonObs=d									
+						//console.log("jsonObs: "+JSON.stringify(jsonObs));
+						numberOfJsonObs = Object.keys(jsonObs.stations).length
+						//getFcsts(jsonObs)
+						//getZone()
+						mapStationMarkers(jsonObs)
+					}
+		);	
+	}
+
+
+	function pointInPolygon(projLon,projLat,vs) 
+	{
+	// from https://github.com/substack/point-in-polygon      
+        // ray-casting algorithm based on
+        // http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
+	        
+        	x = projLon,
+        	y = projLat,
+        	inside = false;
+        	for (var i = 0, j = vs.length - 1; i < vs.length; j=i++) 
+		{
+		
+			xi=parseFloat(vs[i].split(",")[0])
+			yi=parseFloat(vs[i].split(",")[1])
+			xj=parseFloat(vs[j].split(",")[0])
+			yj=parseFloat(vs[j].split(",")[1])
+	
+			intersect = (  (yi > y) != (yj > y)) && (x<(xj-xi)*(y-yi)/(yj-yi)+xi  );
+
+			if (intersect){inside = !inside}
+		}
+		return [inside,x,xi,xj,y,yi,yj,intersect]
+	}
+
+	function getZone()
+	{
+		console.log("in getZone")
+		pth = g.selectAll("path")
+//console.log("pth: "+pth)
+	
+			
+			for (var k=0;  k<jsonObs.stations.length; k=k+1)
+			{
+				j=jsonObs.stations[k]
+
+				pth.each(function(d, i)
+				{
+					//console.log("zone: "+d3.select(this).attr("zone"))
+
+					coords = [d3.select(this).attr("d")]
+					coords[0]=coords[0].replace(new RegExp("[MZL]","g")," ")
+
+					//console.log("coords: "+coords[0])
+
+					coords=coords[0].split(" ")
+					//console.log("coords after space split: "+coords)
+
+					coords.shift()
+					//console.log("coords after shift: "+coords)
+
+					coords.pop()
+					//console.log("final coords after pop: "+coords)
+
+						rA=pointInPolygon( projection([j.longitude, j.latitude])[0], projection([j.longitude, j.latitude])[1], coords)
+						isInside=rA[0]
+						x=rA[1]
+						xi=rA[2]
+						xj=rA[3]
+						y=rA[4]
+						yi=rA[5]
+						yj=rA[6]
+						intersect = rA[7]					
+
+						if (isInside)
+						{
+							console.log("------>"+j.id+" is in zone: "+d3.select(this).attr("zone"))
+							jsonObs.stations[k].zone=d3.select(this).attr("zone");							
+							
+	        			  	}
+						else
+						{
+							//console.log("------------> Can't id zone for site: "+j.id+"    lat:"+j.latitude+" lon:"+j.longitude+" in zone: "+d3.select(this).attr("zone"))
+						}
+				})//end pth.each function
+			}
+
+
+	}
+
+         
+	function getZone0()
+	{
+		console.log("in getZone0")
+		jimObs=jsonObs;
+		pth = g.selectAll("path")
+		//console.log("pth: "+pth)
+		pth.each(function(d, i)
+				{
+					console.log("zone: "+d3.select(this).attr("zone"))
+
+					coords = [d3.select(this).attr("d")]
+					coords[0]=coords[0].replace(new RegExp("[MZL]","g")," ")
+
+					//console.log("coords: "+coords[0])
+
+					coords=coords[0].split(" ")
+					//console.log("coords after space split: "+coords)
+
+					coords.shift()
+					//console.log("coords after shift: "+coords)
+
+					coords.pop()
+					//console.log("final coords after pop: "+coords)
+
+						
+
+			
+			for (var k=0;  k<jimObs.stations.length; ++k)
+			{
+				j=jimObs.stations[k]
+				console.log("k: "+k+" id: "+j.id)
+				//console.log("projected longitude: "+projection([j.longitude, j.latitude])[0])
+        			//if (pointInPolygon(projection([j.longitude, j.latitude]), coords))
+				if (pointInPolygon( projection([j.longitude, j.latitude])[0], projection([j.longitude, j.latitude])[1], coords))
+						{
+							console.log("------>"+j.id+" is in zone: "+d3.select(this).attr("zone"))
+							console.log("------------> xi: "+xi+" x: "+x+" xj: "+xj+" yi: "+yi+" y: "+y+" yj: "+yj)
+	        			  	}
+						else
+						{
+							//console.log("------------> Can't id zone for site: "+j.id+"    lat:"+j.latitude+" lon:"+j.longitude+" in zone: "+d3.select(this).attr("zone"))
+						}
+				
+			}
+
+		})//end pth.each function
+	}
+
+	function getFcsts()
+	{
+		for (var k=0;  k<jsonObs.stations.length; ++k)
+						{											
+							j=jsonObs.stations[k] //append a NDFD forecast for every station in jsonObs to jsonObs
+							var lat=j.latitude//.trim()
+							var lon=j.longitude//.trim()							
+							//var fcstUrl = "http://forecast.weather.gov/MapClick.php?lat="+lat+"&lon="+lon+"&FcstType=json"
+							var furl= "http%3A%2F%2Fforecast.weather.gov%2FMapClick.php%3Flat%3D"+lat+"%26lon%3D"+lon+"%26FcstType%3Djson&mode=native"
+							var fcstUrl = "ba-simple-proxy/ba-simple-proxy.php?/&url="+furl
+							fetch(fcstUrl,k)
+						}
+	}
+
+		function fetch(fcstUrl,k)
+		{
+			d3.json(fcstUrl, function(d)
+						{
+							jsonObs.stations[k].forecast=d;
+							//console.log(JSON.stringify(jsonObs.stations[k].forecast));
+						}
+						);
+		}
+
+	
+	Array.prototype.sortByProp = function(p)
+	{
+		return this.sort(function(a,b)
+			{
+				return (a[p] > b[p]) ? 1 : (a[p] < b[p]) ? -1 : 0;
+			}
+		);
+	}
+
+	Array.prototype.sortBy = function()   /*d.stations.sortBy('-Winds') d.stations.sortBy('-Winds','elev') */
+	{
+		function _sortByAttr(attr) 
+		{
+			var sortOrder = 1;
+        		if (attr[0] == "-") 
+			{
+	        		sortOrder = -1;
+				attr = attr.substr(1);
+		        }
+
+        		return function(a,b) 
+			{	
+				// Make sure strings are strings, and numbers are numbers 
+				//if ( attr=="Ceiling" || attr=="Clouds" || attr=="Date" || attr=="Weather" || attr=="Wx" || attr=="id" 
+				//				|| attr=="link" || attr=="name" ||attr=="provider" )
+				if (textOnlyParms.indexOf(attr))
+				{
+					a=a[attr]
+					b=b[attr] 
+				}
+				else
+				{ 
+					a=+a[attr] || 0
+					b=+b[attr] || 0 
+				}	
+				result = (a<b) ? -1 : (a>b) ? 1 : 0;
+				//console.log(a+" "+result+" "+b)
+				return result * sortOrder;
+		        }	
+		}
+
+		function _getSortFunc() 
+		{
+			if (arguments.length == 0)
+			{
+				throw "Zero length arguments not allowed for Array.sortBy()";
+			}
+			var args = arguments;
+			return function(a, b) 
+			{
+				for (var result = 0, i = 0; result == 0 && i < args.length; i++) 
+				{
+					result = _sortByAttr(args[i])(a, b);
+				}
+				return result;
+			}
+		}
+		return this.sort(_getSortFunc.apply(null, arguments));
+	}
+
+	function mapMost(d,parm1,parm2,up,number)	
+	{					
+		d.stations.sortBy(parm1,parm2)
+		d=d.stations.slice(number*up)
+		//console.log(d)
+
+
+
+		g.selectAll(".most").remove()
+		g.selectAll("most").data(d).enter()
+				.append("circle")
+					.attr("class","most")
+					.attr("id",  function(d) { return d.id; })
+					.attr("cx", function(d) { return projection([d.longitude, d.latitude])[0]; })
+					.attr("cy", function(d) { return projection([d.longitude, d.latitude])[1]; })
+					.attr("r", "5")
+					.attr("fill", function(d) {return tempColor(d.Temp)});
+		
+		infoG.selectAll(".currentFireText").remove();	
+		infoG.selectAll("currentFireText").data(d).enter()
+				.append("text")
+					.attr("class", "currentFireText")
+					.attr("x", "10%")
+					.attr("y",function(d, i) { return 20+i*20; } )
+					.text(function(d, i) { return i+1+" "+": "+d.id+" "+parm1+" "+eval('d.'+parm1) })
+		
+	}
+
+	function mapStationMarkers(d)	
+	{		
+		//console.log("msm d:",d)
+		g.selectAll(".mappedStationMarker").remove();
+	        g.selectAll("mappedStationMarker").data(d.stations).enter()	     
+				.append("circle")
+					.attr("id",  function(d) { return d.id; })
+					.attr("class","mappedStationMarker")
+					.attr("cx", function(d) { return projection([d.longitude, d.latitude])[0]; })
+					.attr("cy", function(d) { return projection([d.longitude, d.latitude])[1]; })
+		                	.attr("r", "1")
+					.attr("stroke","1")
+					.attr("fill", function(d) {return tempColor(d.Temp)})
+					.attr("fill-opacity", "100%")
+					.on('click' , function(d){ console.log(d.zone); });
+	}
+
+	function mapCurrentStation(d)	
+	{		
+		//console.log("d: ",d.id)
+		g.selectAll(".currentMappedStation").remove();
+	        g.append("circle").datum(d)
+					.attr("class","currentMappedStation")
+					.attr("id",  function(d) { return d.id; })					
+					.attr("cx", function(d) { return projection([d.longitude, d.latitude])[0]; })
+					.attr("cy", function(d) { return projection([d.longitude, d.latitude])[1]; })
+		                	.attr("r", "10")
+					.attr("stroke","1")
+					.on('click' , function(d){ console.log(d.zone); });
+		//zoomToPoint(d)
+	}
+
+
+	function mapStationText(d)
+	{
+		g.selectAll(".mappedStationText").remove();		
+		g.selectAll("mappedStationText").data(d.stations).enter()
+				.append("text")
+					.attr("class", "mappedStationText")
+					.attr("x", function(d) { return projection([d.longitude, d.latitude])[0]; })
+					.attr("y", function(d) { return projection([d.longitude, d.latitude])[1]; })
+					.text(function(d){return d.zone})
+	}
+
+	function mapFireText(fj,l)
+	{
+		d=fj.rss.channel.item[l]
+		lat=d['geo:lat']['#text']
+		lon=d['geo:long']['#text']
+		title=d['title']['#text']
+		desc=d['description']['#text']
+
+//console.log("d: ",title)
+
+		g.select(".currentFire").remove();
+		info.select(".currentFireText").remove();
+		info.select(".infoText").remove();
+
+		//map.selectAll("mappedStationText").data(d.rss.channel.item).enter()
+		g.append("circle")
+				.attr("class", "currentFire")
+				.attr("cx", function(d) { return projection( [lon,lat])[0] })
+				.attr("cy", function(d) { return projection( [lon,lat])[1] })
+				.attr("r","10")
+	
+		info.append("text")
+				.attr("class", "currentFireText")
+				.attr("x","5%" )
+				.attr("y","5%" )
+				.text(title)
+
+		info.append("foreignObject")
+				.attr("class", "infoText")
+				.attr("x", "5%")
+				.attr("y","10%")
+				.attr("width", "90%")
+				.attr("height", "90%")
+				.text(desc)
+
+
+/*
+		var jim = info.select(".infoText")
+		jim		
+			.transition().duration(dwellTime*.7)
+				.attr("transform","translate(0,1500)")
+			.transition().delay(dwellTime*.3)
+*/
+	}
+
+
+
+
+//end functions
+
+//main
+loadCwaMap()
+//getFireRss()
+
+getData()
+
+// every hour regrab obs and forecasts
+	setInterval(function()
+		{
+			loadCwaMap()
+			//getFireRss()
+			getData()
+		}, 3600000
+	);
+
+
+// every 5 seconds display a new station from fireJson with along forecast info
+	var l=0
+	console.log("asosParms.length: ",asosParms.length);
+//console.log("numberOfJsonObs: ",numberOfJsonObs);
+setInterval(function()
+			{
+				
+				//if (l==numberOfJsonObs){l=0} else {l=l+1}
+				//mapCurrentStation(jsonObs.stations[l])
+				//result = (a<b) ? -1 : (a>b) ? 1 : 0;shift
+				l = (l>asosParms.length) ? l=0 : l=l+1;
+				//console.log("l: ",l+"   asosParms[l]: "+asosParms[l]);
+				mapMost(jsonObs,asosParms[l],"elev",-1,20)
+				
+			}, 3000
+	);
+
+
+
+/*setInterval(function()
+			{
+				//if (l == (fireJson.rss.channel.item.length-1)){l=0;} else {l=l+1;}
+				//mapFireText(fireJson,l);
+
+				if (jsonObs.stations[l].id=="CQ086extended")
+					{buildFcst(jsonObs.stations[l],4,8)}
+				else if (jsonObs.stations[l].id=="CQ086")
+					{
+						//console.log("displaying valley once...")
+						buildFcst(jsonObs.stations[l],0,4)
+						//console.log("...then deleting from jsonObs")
+						jsonObs.stations.splice(l,1)
+					}
+				else {buildFcst(jsonObs.stations[l],0,4)}
+
+			}, dwellTime
+	);
+*/
+
+
+    </script>
+    </body>
+</html>

@@ -1,0 +1,328 @@
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+"http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>Sun and Moon Calculations</title>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=ISO-8859-1">
+<meta name="Description" content="Sun and moon calculations">
+<meta name="Keywords" content="sun,sunrise,sunset,moon phase,javascript">
+
+<!-- EDIT THE library PART OF THE NEXT LINES FOR YOUR DIRECTORIES -->
+
+<link href="default.css" rel="stylesheet" type="text/css">
+
+<script language="JavaScript" type="text/javascript" src="clock.js">
+</script>
+
+<script language="JavaScript" type="text/javascript" src="degrees.js">
+</script>
+
+<script language="JavaScript" type="text/javascript" src="astro.js">
+</script>
+
+<script language="JavaScript" type="text/javascript" src="sun.js">
+</script>
+
+<script language="JavaScript" type="text/javascript" src="moon.js">
+</script>
+
+</head>
+
+<body>
+
+<h1>Sun and Moon Calculations</h1>
+<p>
+<noscript>
+<p><center>
+<b><font size="+2">Please enable JavaScript to use this page.</font></b>
+</center>
+<p>
+</noscript>
+
+<!--
+If you've saved this you may find the script missing and some text
+that gives sun and moon details. Save the page again as described
+below.
+-->
+
+
+<center>
+<table border="1" cellpadding="5" width="90%" class="fixed_bluebox">
+<tr align="center">
+<td>
+
+<script language="JavaScript" type="text/javascript">
+
+// Default date and time from your computer
+
+var now=new Date();
+var Year=getFullYear(now);
+var Month=now.getMonth()+1;
+var Day=now.getDate();
+var TZ=now.getTimezoneOffset();
+var TZsummer=false;
+document.write("<b>Your clock "+now.toLocaleString()+"<\/b><br>");
+document.write("Which is "+now.toUTCString()+"<br>");
+// Try to find daylight saving
+now.setMonth(0); var tz0 = now.getTimezoneOffset();
+now.setMonth(6); var tz6 = now.getTimezoneOffset();
+if (tz6 < tz0) { // Northern hemisphere with DST
+  document.write("You appear to be in the Northern hemisphere");
+  if (TZ < tz0) {
+    document.write(" with daylight saving time on");
+    TZsummer=true;
+  } else {
+    document.write(" with daylight saving time off");
+  }
+}
+if (tz0 < tz6) { // Southern hemisphere with DST
+  document.write("You appear to be in the Southern hemisphere");
+  if (TZ < tz6) {
+    document.write(" with daylight saving time on");
+    TZsummer=true;
+  } else {
+    document.write(" with daylight saving time off");
+  }
+}
+document.write("<p>");
+
+// Place = the name of the place the calculations are done for
+// Lat = your local latitude: north positive, south negative
+// Long = your local longitude: east of Greenwich is positive
+// TZ = difference between your time and Greenwich time in hours
+// east of Greenwich is positive, you can add 1 hour for daylight saving.
+// If your computer is set to your timezone we'll make the correction for you.
+// TZname = time zone name, can be a blank string might be changed for DST
+// but you need to tell us what it is called if zones are not GMT/BST.
+
+var Place = "YosemiteNP";
+var Lat = 37.74861;
+var Long = -119.58694;
+var TZ = -8;       // +1 for British Summer Time Correction
+var TZname="PST"; // Change to your local zone time name
+if (TZsummer==true) {
+  TZ+=1;
+  TZname="PDT"   // Change to your local zone summer time name
+}
+// Update variables passed as a search string
+
+if (location.search.length > 1) {
+  var argstr = location.search.substring(1,location.search.length);
+  var args = argstr.split('&');
+  for (var i=0; i<args.length; i++) eval(unescape(args[i]));
+}
+
+// sun rise and set
+
+var suntimes=SunRiseSet(Year,Month,Day,Lat,Long);
+document.write("<b>At "+Place+" on "+datestring(Year,Month,Day)+"<\/b><br>");
+document.write("Sun rises at&nbsp;");
+document.write(hmstring(suntimes[0]+TZ)+" "+TZname);
+document.write("<br>");
+document.write("Sun sets at&nbsp;&nbsp;");
+document.write(hmstring(suntimes[1]+TZ)+" "+TZname);
+document.write("<br>");
+document.write("&nbsp;&nbsp;Sun up for&nbsp;&nbsp;&nbsp;");
+document.write(hmstring(suntimes[1]-suntimes[0])+" &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
+document.write("<p>");
+
+// Moon rise and set
+// WARNING code here changed on 6/7 May 2003
+// SunRiseSet uses UTC as the Sun position varies slowly
+// MoonRiseSet now uses local zone time (including daylight saving)
+// if this is not done it is possible to go into the previous or next day
+
+var mrs=MoonRise(Year,Month,Day,TZ,Lat,Long);
+if ((mrs[0]<0) && (mrs[1]<0)) {
+  if (mrs[0]==-1) {
+    document.write("Moon is down all day<br>");
+  } else {
+    document.write("Moon is up all day<br>");
+  }
+} else {
+  if (mrs[1]<=mrs[0]) {
+    if (mrs[1]>=0) {
+      document.write("Moon sets at&nbsp;&nbsp;"+hmstring(mrs[1])+" "+TZname+"<br>");
+    }
+    if (mrs[0]>=0) {
+      document.write("Moon rises at&nbsp;"+hmstring(mrs[0])+" "+TZname+"<br>");
+    }
+  } else {
+    if (mrs[0]>=0) {
+      document.write(" Moon rises at&nbsp;"+hmstring(mrs[0])+" "+TZname+"<br>");
+    }
+    if (mrs[1]>=0) {
+      document.write(" Moon sets at&nbsp;&nbsp;"+hmstring(mrs[1])+" "+TZname+"<br>");
+    }
+  }
+}
+
+// Moon phase
+var mp=MoonPhase(Year,Month,Day,0-TZ);
+document.write("Moon phase at 00:00 is "+Math.round(mp)+
+               "<sup><font size=\"-1\">&deg;<\/font><\/sup> ");               
+document.writeln(" = "+Math.round(100.0*(1.0+cosd(mp))/2.0)+"% illuminated<br>");
+mp=MoonPhase(Year,Month,Day,24.00-TZ);
+document.write("Moon phase at 24:00 is "+Math.round(mp)+
+               "<sup><font size=\"-1\">&deg;<\/font><\/sup> ");               
+document.writeln(" = "+Math.round(100.0*(1.0+cosd(mp))/2.0)+"% illuminated<p>");
+// Table of the new, moon first quarter, full mon and last quarter
+document.writeln("<table border=\"1\"cellpadding=\"5\">");
+document.write("<tr><td align=\"center\">&nbsp;</td>");
+document.write("<td align=\"center\">Date</td><td align=\"center\">Time (UT)</td>");
+document.writeln("<td align=\"center\">Phase at 00:00 "+TZname+"</td></tr>");
+var JDE=MoonQuarters(Year,Month,Day);
+var JDEc;
+for (i=0; i<=3; i++) {
+  JDEc=jdtocd(JDE[i]);
+  mp=MoonPhase(JDEc[0],JDEc[1],JDEc[2],0.0-TZ);
+  if (i==0) { document.write("<tr><td>new moon</td>"); }
+  if (i==1) { document.write("<tr><td>first quarter</td>"); }
+  if (i==2) { document.write("<tr><td>full moon</td>"); }
+  if (i==3) { document.write("<tr><td>last quarter</td>"); }
+  document.write("<td>"+datestring(JDEc[0],JDEc[1],JDEc[2])+"</td>");
+  document.writeln("<td align=\"center\">"+((JDEc[4]<10) ? " 0" : " ")+JDEc[4]+((JDEc[5]<10) ? ":0" : ":")+JDEc[5]+"</td>");
+  document.writeln("<td align=\"center\">"+Math.round(mp)+"<sup><font size=\"-1\">&deg;<\/font><\/sup></td></tr>");
+}
+
+document.writeln("</table>");
+</script>
+
+<p>Copyright &copy; Peter Hayes 2001-2012<br>
+Last Updated on 2012:06:30<br>
+New leap second at midnight 30 June 2012.
+Update to moon.js comments in sun_moon.html.
+</table> 
+<p>
+</center>
+<p>
+If you want rise and set times at your location you can add a query string to this
+URL, it should look something like these examples 
+<p>
+<center>
+<table border="1" cellpadding="5" class=greybox>
+<tr><td>
+<a href="sun_moon.html?Place='Cheltenham'&amp;Lat=51.88&amp;Long=-2.11&amp;TZ=+1&amp;TZname='BST'">
+Cheltenham in Summer</a>
+<td>?Place='Cheltenham'&amp;Lat=51.88&amp;Long=-2.12&amp;TZ=+1&amp;TZname='BST'</td></tr>
+<tr><td>
+<a href="sun_moon.html?Place='Berlin'&amp;Lat=+52.53&amp;Long=13.42&amp;TZ=+1&amp;TZname='CET'">
+Berlin</a>
+<td>?Place='Berlin'&amp;Lat=+52.53&amp;Long=13.42&amp;TZ=+1&amp;TZname='CET'</td></tr>
+<tr><td>
+<a href="sun_moon.html?Place='Stockholm'&amp;Lat=59.33&amp;Long=18.06&amp;TZ=+1&amp;TZname='CET'">
+Stockholm</a>
+<td>?Place='Stockholm'&amp;Lat=59.332&amp;Long=18.062&amp;TZ=+1&amp;TZname='CET'</td></tr>
+<tr><td>
+<a href="sun_moon.html?Place='Washington%20DC'&amp;Lat=+38.88&amp;Long=-77.0&amp;TZ=-5&amp;TZname='EST'">
+Washington DC</a>
+<td>?Place='Washington%20DC'&amp;Lat=+38.88&amp;Long=-77.0&amp;TZ=-5&amp;TZname='EST'</td></tr>
+</table>
+</center>
+<p>
+<ul>
+<li><b>Place</b> is any text string, note the way of putting a space in the
+Washington&nbsp;DC example by putting the percent sign followed by 20 as a way of encoding a space.
+<li><b>Lat</b>itude is positive if North.
+<li><b>Long</b>itude and <b>T</b>ime <b>Z</b>one are positive if East
+of Greenwich.
+<li>You can add one hour to the time zone during daylight saving time.<br>
+<li>You can also add any or all of <b>Year, Month</b> and <b>Day</b>
+to print rise and set times for other dates.<br>
+For example for 1<sup>st</sup> January 2000 where I live<br>
+<a href="sun_moon.html?Place='Cheltenham%20UK'&amp;
+Lat=51.88&amp;Long=-2.12&amp;TZ=+0&amp;TZname='GMT'&amp;Year=2000&amp;Month=1&amp;Day=1">
+Place='Cheltenham%20UK'&amp;Lat=51.88&amp;Long=-2.12&amp;
+TZ=+0&amp;TZname='GMT'&amp;Year=2000&amp;Month=1&amp;Day=1</a>
+</ul>
+<p>
+The <B>Universal Time</B> date and time above depends on your computer having
+the correct date, time and timezone set.  <p> The <b>sun rise and
+set</b> calculations are based on the method in the sci.astro
+newsgroup FAQ by
+<a href="http://stjarnhimlen.se/english.html">Paul Schlyter</a>.
+They should be within a few minutes of the correct time except at
+high latitudes. <b>UK Lighting Up Time</b> is defined as 30 minutes after sunset to
+30 minutes before sunrise.
+<p>
+The <b>moon rise, set and phase</b> calculations use the methods in
+<a href="http://www.willbell.com/math/mc1.htm">Astronomical Algorithms</a> by 
+<a href="http://en.wikipedia.org/wiki/Jean_Meeus">Meeus</a>.
+A phase of 360<sup><font size="-1">&deg;</font></sup> is a full moon,
+it reduces to 180<sup><font size="-1">&deg;</font></sup> at new moon
+and 0<sup><font size="-1">&deg;</font></sup> at the next full moon.
+The table for the phases uses the larger of Meeus's corrections and 
+agrees with the tables of moon phases
+at <a href="http://aa.usno.navy.mil/faq/docs/moon_phases.php">
+   The US Naval Observatory</a>.
+Meeus calculates the times using terrestrial dynamic time (TDT).
+TDT = UTC + (number of 
+<a href="http://tycho.usno.navy.mil/leapsec.html">leap seconds</a>) + 32.184
+At the end of June 2012 the 25th leap second was added but when a leap second is added is
+un-predictable as it depends on difference between the variable rotation of the Earth
+and the precise 'tick' of an atomic clock.
+So here the correction from TDT to UTC is currently for 25 leap seconds.
+This should still be sufficient for those religions which use a lunar calendar as
+the local moonrise depends on things such as the local horizon and light pollution
+which affects when the first sighting of the new moon is possible, see the
+<a href="http://aa.usno.navy.mil/faq/docs/islamic.php">
+         USNO Islamic page</a> for more details.
+<p>
+If you want to add sun or moon details to your pages for
+non-commercial use you may copy the JavaScript and any of these web
+pages.  You must keep my copyright notice in the source.  I accept no
+liability for any errors if you use the code.  Please contact me for
+commercial use, to report problems and to suggest improvements, my
+e-mail address is on <a href="index.html#CONTACT">my home page</a>.
+<p>
+If you use Internet Explorer you can use the
+<i>File-&gt;Save&nbsp;As</i> option and select the type
+<i>Web Page, complete</i> to save this page and all
+its other files. <b>But</b> Internet Explorer does not save the text 'as is'
+but makes un-necessary changes. I recomment you right click on the
+following links and select the <i>Save Target As</i> option.
+I keep the JavaScript and style sheet in a directory called
+<code>library</code>.  If you save it somewhere else you will need to
+correct the web pages.
+
+<p>
+<center>
+<table border="1" cellpadding="5" class=greybox>
+<tr>
+<td><a href="library/clock.js">clock.js</a></td>
+<td>contains some time & date utilities.</td>
+<tr>
+<td><a href="library/degrees.js">degrees.js</a></td>
+<td>contains additional maths library routines.</td>
+<tr>
+<td><a href="library/astro.js">astro.js</a></td>
+<td>contains general astronomical functions.</td>
+<tr>
+<td><a href="library/sun.js">sun.js</a></td>
+<td>contains the Sun calculations. </td>
+<tr>
+<td><a href="library/moon.js">moon.js</a></td>
+<td>contains the moon calculations.</td>
+<tr>
+<td><a href="sun_moon.html">sun_moon.html</a></td>
+<td>contains the source of the main Sun and Moon page.</td>
+<tr>
+<td><a href="library/default.css">default.css</a></td>
+<td>contains the style sheet for the web pages.</td>
+</table>
+</center>
+<p>
+I also have some <a href="ephemeris/index.html">ephemeris</a> pages which
+calculate an ephemeris for the sun, moon or planets.
+<p>
+To contact me look at the <a href="index.html#CONTACT">contact me</a>
+section in my <a href="index.html">home page</a>.
+<p>
+I can also recommend
+<A href="http://photoephemeris.com/">The Photographers Ephemeris</A>
+which has a nice map interface for selecting a location.
+</body>
+</html>
+
+
