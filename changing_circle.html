@@ -12,9 +12,10 @@
 			var xRange = 500;
 			var yRange = 500;
 			var svg = d3.select("body")
-									.append("svg")
-									.attr("height", xRange)
-									.attr("width", yRange);
+						.append("svg")
+						.attr("width", xRange)
+						.attr("height", yRange)
+						.append("g");
 
 			function getData(numOfDataPoints) {
 				var dataset = [];
@@ -29,28 +30,38 @@
 
 			function update(data) {
 				//join
-				circles = svg.selectAll("circle")
-											.data(data);
-				//enter
+				var circles = svg.selectAll("circle")
+								.data(data);
+
+				//update old elements as needed
+				circles.transition().duration(dt).ease("linear")
+						.attr("r", 10)
+						.attr("stroke-width", 1)
+						.attr("cx", function(d) {
+								return d.x;
+						})
+						.attr("cy", function(d) {
+								return d.y;
+						});
+
+				//enter new elements as needed
 				circles.enter().append("circle")
 						.attr("r", 0)
 						.attr("fill", "#22f")
 						.attr("stroke", "#f22")
-						.attr("stroke-width", 0);
-
-				//update
-				circles.transition().duration(dt).ease("linear")
-						.attr("r", 10)
+						.attr("stroke-width", 0)
 						.attr("cx", function(d) {
 								return d.x;
 						})
 						.attr("cy", function(d) {
 								return d.y;
 						})
+					.transition().duration(dt).ease("linear")
+						.attr("r", 10)
 						.attr("stroke-width", 1);
 
 				//remove when they do refresh
-				circles.exit().transition().duration(dt)
+				circles.exit().transition().duration(dt).ease("linear")
 					.attr("r", 0)
 					.attr("stroke-width", 0)
 					.remove();
@@ -58,10 +69,10 @@
 			}
 
 			//initial display
-			var i = 1;
-			update(getData(i));
+			var i = 2;
+			update(getData(1));
 			setInterval(function() {
-						update(getData(i % 100 + 1));
+						update(getData(i % 4));
 						i += 1;
 					}, dt);
 
