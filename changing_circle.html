@@ -8,7 +8,7 @@
 	<body>
     <script type="text/javascript">
 			//setup
-			var dt = 1500
+			var dt = 1000;
 			var xRange = 500;
 			var yRange = 500;
 			var svg = d3.select("body")
@@ -16,9 +16,9 @@
 									.attr("height", xRange)
 									.attr("width", yRange);
 
-			function getData() {
+			function getData(numOfDataPoints) {
 				var dataset = [];
-				var numOfDataPoints = 100;
+				//var numOfDataPoints = 100;
 				for (var i = 0; i < numOfDataPoints; i++) {
 					var newX = Math.random() * xRange;
 					var newY = Math.random() * yRange;
@@ -31,23 +31,15 @@
 				//join
 				circles = svg.selectAll("circle")
 											.data(data);
-				//update
-				circles.transition().duration(dt).ease("linear")
-						.attr("cx", function(d) {
-								return d.x;
-						})
-						.attr("cy", function(d) {
-								return d.y;
-						});
 				//enter
 				circles.enter().append("circle")
 						.attr("r", 0)
-						.attr("cx", xRange/2)
-						.attr("cy", yRange/2)
 						.attr("fill", "#22f")
 						.attr("stroke", "#f22")
-						.attr("stroke-width", 0)
-					.transition().duration(dt).ease("linear")
+						.attr("stroke-width", 0);
+
+				//update
+				circles.transition().duration(dt).ease("linear")
 						.attr("r", 10)
 						.attr("cx", function(d) {
 								return d.x;
@@ -56,13 +48,21 @@
 								return d.y;
 						})
 						.attr("stroke-width", 1);
-				//no need to reomove since data same size
+
+				//remove when they do refresh
+				circles.exit().transition().duration(dt)
+					.attr("r", 0)
+					.attr("stroke-width", 0)
+					.remove();
+
 			}
 
 			//initial display
-			update(getData);
+			var i = 1;
+			update(getData(i));
 			setInterval(function() {
-						update(getData());
+						update(getData(i % 100 + 1));
+						i += 1;
 					}, dt);
 
     </script>
