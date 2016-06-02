@@ -12,6 +12,10 @@
 			padding: 0;
 		}
 
+		body {
+			background-color: #eee;
+		}
+
 		svg {
 			position: absolute;
 			width: 100%;
@@ -24,16 +28,16 @@
 		}
 
 		#zones {
-			fill: #aaa;
+			fill: #555;
 		}
 
 		#zones .active {
-			fill: #aaf;
+			fill: #55a;
 		}
 
 		#zone-borders {
 		  fill: none;
-		  stroke: #eee;
+		  stroke: #fff;
 		  stroke-width: 1px;
 		  stroke-linejoin: round;
 		  stroke-linecap: round;
@@ -41,11 +45,15 @@
 	    }
 
 		#ids {
-			fill: #000;
+			fill: #fff;
 			font-family: helvetica;
-			font-size: 15px;
+			font-size: 10px;
 			text-anchor: middle;
 			opacity: .75;
+		}
+
+		#moused-zone {
+			fill: #5a5;
 		}
 	</style>
 </head>
@@ -64,15 +72,21 @@
 		var pathFunc = d3.geo.path()
 			.projection(projectionFunc);
 
+		//using d3.behavior.zoom
+		var zoom = d3.behavior.zoom()
+			.translate([0,0])
+			.scale(1)
+			.on("zoom", redraw);
+
 		var svg = d3.select("body").append("svg")
 			.attr("width", width)
-			.attr("height", height);
+			.attr("height", height)
+			.call(zoom);
 
 		svg.append("rect")
 			.attr("class", "background")
 		    .attr("width", width)
-		    .attr("height", height)
-			.on("click", clicked);	//click function below
+		    .attr("height", height);
 
 		var g = svg.append("g");
 
@@ -87,7 +101,9 @@
 				.data(zones)
 			  .enter().append("path")
 				.attr("d", pathFunc)
-				.on("click", clicked);	//click function below
+				//.on("click", clicked)	//functions below
+				//.on("mouseover", handleMouseOver)
+				//.on("mouseout", handleMouseOut);
 
 			//make borders separately so they dont slow it down
 			g.append("path")
@@ -139,6 +155,28 @@
 				.duration(750)
 			    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")");
 		}
+
+		//for when the user mouses over a zones
+		function handleMouseOver() {	//adding interactivity
+			d3.select(this)
+				.attr("id", "moused-zone");
+		}
+		function handleMouseOut() {	//back to normal
+			d3.select(this)
+				.attr("id", "zones");
+		}
+
+		//zooming and translating
+		function redraw() {
+	        g.transition().duration(100).ease("linear")
+				.attr("transform",
+				"translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+		}
+
+		//wtf is this
+		d3.select(self.frameElement)
+			.style("height", height + "px");
+
 	</script>
 </body>
 </html>
