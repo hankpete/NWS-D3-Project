@@ -4,53 +4,45 @@
 		<meta charset="utf-8">
 		<title>D3 Test</title>
         <style>
-
         </style>
 		<script type="text/javascript" src="d3/d3.js"></script>
 	</head>
 	<body>
         <script type="text/javascript">
-
-			var text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque quis arcu malesuada, scelerisque augue nec, interdum neque. Ut tempor auctor mollis. Aenean ut ex eget mi aliquet interdum accumsan non tortor. Maecenas auctor dapibus fringilla. Morbi aliquam sem ac turpis elementum vehicula. Phasellus fermentum lorem metus, eget molestie ligula euismod sit amet. Donec nec turpis hendrerit, sollicitudin turpis in, scelerisque ipsum. Cras bibendum viverra libero at pharetra. Nunc quis justo lorem. Etiam et dictum risus. Sed eget tellus sed libero pulvinar aliquam ut nec metus. Aenean ac ligula faucibus, pretium arcu at, ultricies sem. Suspendisse est nunc, mattis eget metus nec, bibendum tristique massa."
-			var w = 825;
-			var h = 100;
-
+			var text = " Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque quis arcu malesuada, scelerisque augue nec, interdum neque. Ut tempor auctor mollis. Aenean ut ex eget mi aliquet interdum accumsan non tortor. Maecenas auctor dapibus fringilla. Morbi aliquam sem ac turpis elementum vehicula. Phasellus fermentum lorem metus, eget molestie ligula euismod sit amet. Donec nec turpis hendrerit, sollicitudin turpis in, scelerisque ipsum. Cras bibendum viverra libero at pharetra. Nunc quis justo lorem. Etiam et dictum risus. Sed eget tellus sed libero pulvinar aliquam ut nec metus. Aenean ac ligula faucibus, pretium arcu at, ultricies sem. Suspendisse est nunc, mattis eget metus nec, bibendum tristique massa."
+			var w = window.innerWidth;
+			var h = window.innerHeight;
 			var svg = d3.select("body").append("svg")
 						.attr("width", w)
 						.attr("height", h)
 						.append("g");
-
+			var fraction = 15;
 			svg.append("rect")
 				.attr("x", 0)
-				.attr("y", h/2)
+				.attr("y", h/fraction)
 				.attr("width", w)
 				.attr("height", 40)
 				.attr("fill", "black");
-
 			svg.append("text")
 				.attr("fill", "white")
 				.attr("font-size", 30)
 				.attr("font-family", "droid sans mono")
 				.attr("x", w)
-				.attr("y", h/2 + 30)
+				.attr("y", h/fraction + 30)
 				.text("");
-
 			var data = [];
 			var i = 0;
 			tick();
-
 			function tick() {
 				//add a new letter
 				data.push(text[i % text.length]);
 				i++;
 				svg.select("text")
 					.text(data.join(""))
-				  .transition().duration(100).ease("linear")
+				  .transition().duration(200).ease("linear")
 				  	.attr("x", w - data.length*10)
 					.each("end", tick);
-
 			}
-
         </script>
     </body>
 </html>
