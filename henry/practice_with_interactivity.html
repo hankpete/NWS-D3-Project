@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>D3 Work</title>
+    <meta charset="utf-8">
+    <script src="d3/d3.min.js"></script>
+    <style type="text/css">
+        * {
+            pointer-events: all;
+        }
+        /*svg .circle {
+            fill: black;
+            stroke: green;
+            pointer-events: all;
+            opacity: 1
+        }*/
+    </style>
+</head>
+<body>
+<script>
+    var w = window.innerWidth;
+    var h = window.innerHeight;
+
+    var svg = d3.select("body")
+        .append("svg")
+        .attr("width", w)
+        .attr("height", h);
+
+    svg.append("rect")
+        .attr("width", w)
+        .attr("height", h)
+        .attr("fill", "white")
+        .on("touchmove", makePointer)
+        .on("mousemove", makePointer);
+
+    var margins = 100;
+    var coordsData = getData(50, 1, false);
+    var velData = getData(50, .25, true);
+    var dt = 1000;
+
+    function update() {
+
+        for (var i = 0; i<coordsData.length; i++) {
+            var new_x = coordsData[i].x + velData[i].x;
+            var new_y = coordsData[i].y + velData[i].y;
+            //keep inside
+            if (new_x > w - margins) {
+                //new_x = w - margins;
+                velData[i].x = -velData[i].x;
+            } else if (new_x < 0 + margins) {
+                //new_x = 0 + margins;
+                velData[i].x = -velData[i].x;
+            }
+            if (new_y < 0 + margins) {
+                //new_y = 0 + margins;
+                velData[i].y = -velData[i].y;
+            } else if (new_y > h - margins) {
+                //new_y = h - margins;
+                velData[i].y = -velData[i].y;
+            }
+            coordsData[i] = {"x" : new_x,
+                             "y" : new_y}
+        }
+
+        //join
+        var circles = svg.selectAll("circle")
+            .data(coordsData);
+        //enter
+        circles
+          .enter()
+            .append("circle")
+            .attr("cx", function(d) {return d.x;})
+            .attr("cy", function(d) {return d.y})
+            .attr("r", 15)
+            .attr("stroke-width", 3)
+            .attr("fill", "yellow")
+            .attr("stroke", "green")
+            //.on("mouseover", killcirc)
+          .transition().duration(dt)
+            .attr("fill", "white")
+            .attr("stroke", "white");
+
+        //update
+        circles
+          .transition().duration(dt).ease("linear")
+            .attr("cx", function(d) {return d.x;})
+            .attr("cy", function(d) {return d.y});
+
+
+    }
+
+    //call function and update ints
+    update();
+    setInterval(function() { update(); }
+                , dt);
+
+    function killcirc() {
+        d3.select(this)
+          .transition().duration(dt)
+            .attr("r", 3000)
+            .attr("fill", "red")
+            .attr("stroke", "pink")
+            .style("opacity", 0.0);
+    }
+
+    function makePointer() {
+        var mouseCoords = d3.mouse(this);
+        pointer = svg.selectAll("ellipse")
+            .data([1]);
+
+        pointer
+          .enter()
+            .append("ellipse")
+            .attr("cx", mouseCoords[0])
+            .attr("cy", mouseCoords[1])
+            .attr("rx", 20)
+            .attr("ry", 20)
+            .attr("stroke-width", 5)
+            .attr("fill", "red")
+            .attr("stroke", "black");
+
+        pointer
+          .transition().duration(100).ease("linear")
+            .attr("cx", mouseCoords[0])
+            .attr("cy", mouseCoords[1]);
+
+        //???
+        d3.event.preventDefault();
+    }
+
+    function getData(numOfDataPoints, scalar, isVel) {
+        var dataset = [];
+        for (var i = 0; i < numOfDataPoints; i++) {
+            var newX = Math.random() * (w - margins) * scalar;
+            var newY = Math.random() * (h - margins) * scalar;
+            if (isVel) {
+                if (Math.random() < .5) {
+                    newX = -newX;
+                }
+                if (Math.random() < .5) {
+                    newY = - newY;
+                }
+            }
+            dataset.push({"x": newX, "y": newY});
+        }
+        return dataset;
+    }
+</script>
+</body>
+</html>
