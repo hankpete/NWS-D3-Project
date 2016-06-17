@@ -1,0 +1,18 @@
+Big Idea:
+  -have a page that shows lots of data/webcams related to whatever local areas they need to see.
+
+Specifics:
+  -data can be extracted at http://www.wrh.noaa.gov/hnx/JimBGmwXJList.php?extents=34.74,-121.4,38.36,-117.62&mode=native
+    --adjust the lat lons to make the bounding box diff (make this something they can choose)
+  -from this data, display a map with whatever facts they want (forecast, altitude, etc.)
+  -additionally, cycle through webcams at different locations and show where they are on the map
+  -make sure there is some kind of key for the data
+
+Some extra ideas:
+  -check current ob against the forecast and display how it is diff
+  -zoom in on the map where it is
+    --transitions all over the place
+  -gui checkboxes of what u want on display
+  -adjust lat lon as needed
+    -draw rectangle on a map to get the data u want
+  -make a library for some of the main functions
