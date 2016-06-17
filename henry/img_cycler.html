@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Image Cycler</title>
+	<script src="d3/d3.min.js"></script>
+	<style>
+		img {
+			display: block;
+    		margin-left: auto;
+    		margin-right: auto;
+		}
+	</style>
+
+</head>
+<body>
+
+	<!-- some fake images and some real  -->
+	<div>
+		<img />
+		<img class="cycled-imgs" height="500" width="500"/>
+		<img />
+	</div>
+
+<script>
+	//put whatever image names you want in image_locations:
+	var image_locations = ["1.png", "2.png", "3.png"];
+	var dt = 5000;	//total length of time of transition btwn images
+	var change_time = dt/3;		//length of time of opacity change
+
+	function update(num) {
+
+		var image = [ image_locations[num % image_locations.length] ];
+
+		//join
+		var img = d3.select("body").selectAll("img.cycled-imgs")
+			.data(image);
+
+		//update
+		img
+			.attr("src", function(d) {return d;})
+		.transition()
+			.duration(change_time)
+			.style("opacity", 1)
+		.transition()
+			.delay(dt - change_time)
+			.duration(change_time)
+			.style("opacity", 0);
+
+	}
+
+	var count = 0;
+	update(count);
+	setInterval(function() {
+		count++;
+		update(count);
+		}, dt);
+
+</script>
+
+</body>
+</html>

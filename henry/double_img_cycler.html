@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Image Cycler</title>
+	<script src="https://d3js.org/d3.v3.min.js"></script>
+</head>
+<body>
+
+<div style="position: relative; left: 0; top: 0;">
+  <img style="position: relative; top: 0; left: 0;" class="below"/>
+  <img style="position: absolute; top: 0; left: 0;" class="above"/>
+</div>
+
+<script>
+	var image_locations = ["https://lh4.googleusercontent.com/-HGEPC8bqbh4/U_PiUrcS4UI/AAAAAAAAABA/zv_ZN7eCSZU/w800-h800/batux-tux-g2-hd-800x800.png",
+		"https://upload.wikimedia.org/wikipedia/en/2/26/High_Fidelity_Inc_logo_800x800.jpg",
+		"http://ww2.kqed.org/science/wp-content/uploads/sites/35/2015/09/P_COLOR2_enhanced_release-800x800.jpg"];
+	
+	var dt = 3000;
+	var change_time = dt/2;
+	
+	function update(num) {
+		var image1 = [ image_locations[num % image_locations.length] ], 
+		    image2 = [ image_locations[(num + 1) % image_locations.length] ];
+		
+		var img_below = d3.select("body").selectAll("img.below")
+			.data(image1);
+
+		var img_above = d3.select("body").selectAll("img.above")
+			.data(image2);
+
+		//update
+		img_below
+			.attr("src", function(d) {return d;})
+			.style("opacity", 1)
+		  .transition()
+			.duration(change_time)
+			.style("opacity", 0);
+	
+		img_above
+			.attr("src", function(d) {return d;})
+			.style("opacity", 0)
+		  .transition()
+			.duration(change_time)
+			.style("opacity", 1);
+	}
+	var count = 0;
+	update(count);
+	setInterval(function() {
+		count++;
+		update(count);
+		}, dt);
+</script>
+</body>
+</html>
