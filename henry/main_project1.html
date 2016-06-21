@@ -131,8 +131,9 @@
 			"RawsTemp12", "RawsTemp13", "RawsTemp14", "RawsRelh12",
 			"RawsRelh13", "RawsRelh14"];
 		var dataUrl = "ba-simple-proxy/ba-simple-proxy.php?url=http://www.wrh.noaa.gov/hnx/JimBGmwXJList.php?extents=34.74,-121.4,38.36,-117.62&mode=native";
-		var dt = 3000;
-		var delay = 3*dt;
+		var firstTime = true;
+		var dt = 1000;
+		var delay = 5*dt;
 		d3.json(dataUrl, function(error, data) {
 			if (error) { console.log("There was an error loading the data." + error); }
 
@@ -161,10 +162,9 @@
 					.range([0, 255]);
 
 			g.selectAll("rect.heatmap")
-					.data(rectsData);
+					.data(rectsData)
 				.enter()
 					.append("rect")
-					.attr("id", "changing")
 					.attr("x", function(d, i) {
 						return 2.2*categoryTextWidth + i*(.75*categoryTextWidth/numRects);
 					})
@@ -174,8 +174,7 @@
 					.attr("fill", function(d) {
 						var num = Math.round(colorScale(d));
 						return "rgb(" + num + ", 0, " + (255 - num) + ")";
-					})
-					.style("opacity", 0);
+					});
 		}
 		function cycle(index, dataFull) {
 			//pick next data category
@@ -183,14 +182,17 @@
 
 			initialize(dataFull, category);
 
-			g.selectAll("#changing")
+			g.selectAll("#above")
 				.transition()
 					.duration(dt)
-					.style("opacity", 1)
+					.style("opacity", 0)
+					.remove();
+
+			g.selectAll("#below")
+				.attr("id", "above")
 				.transition()
-					.delay(delay)
 					.duration(dt)
-					.style("opacity", 0);
+					.style("opacity", 1);
 		}
 
 		function initialize(dataFull, name) {
@@ -217,14 +219,14 @@
 			//display name of category
 			var textHeight = height/15;
 			var categoryTextWidth = width/4;
-			var text = g.selectAll("text.category-text")
+			var text = g.selectAll("text#below.category-text")
 					.data([0]);
 
 			text
 				.enter()
 					.append("text")
 					.attr("class", "category-text")
-					.attr("id", "changing")
+					.attr("id", "below")
 					.attr("x", categoryTextWidth)
 					.attr("y", textHeight)
 					.text(name)
@@ -234,14 +236,14 @@
 					.text(name);
 
 			//show a legend for the color map
-			var minText = g.selectAll("text.min-text")
+			var minText = g.selectAll("text#below.min-text")
 					.data([0]);
 
 			minText
 				.enter()
 					.append("text")
 					.attr("class", "min-text")
-					.attr("id", "changing")
+					.attr("id", "below")
 					.attr("x", 2*categoryTextWidth)
 					.attr("y", textHeight)
 					.text(min)
@@ -250,14 +252,14 @@
 			minText
 				.text(min);
 
-			var maxText = g.selectAll("text.max-text")
+			var maxText = g.selectAll("text#below.max-text")
 					.data([0]);
 
 			maxText
 				.enter()
 					.append("text")
 					.attr("class", "max-text")
-					.attr("id", "changing")
+					.attr("id", "below")
 					.attr("x", 3*categoryTextWidth)
 					.attr("y", textHeight)
 					.text(max)
@@ -299,7 +301,7 @@
 			// 		})
 
 			//add data vis with class 'name' and opacity 0
-			var circs = g.selectAll("circle." + name)
+			var circs = g.selectAll("circle#below." + name)
 					.data(dataFull);
 
 			circs
@@ -312,7 +314,7 @@
 							return "undefined";
 						}
 					})
-					.attr("id", "changing")
+					.attr("id", "below")
 					.attr("cx", function(d) {
 						return projectionFunc([d.longitude, d.latitude])[0]
 					})
