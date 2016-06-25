@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<title>D3 Test</title>
-	<script src="d3/d3.js"></script>
+	<script src="d3/d3.min.js"></script>
 	<script src="https://d3js.org/topojson.v1.min.js"></script>
 	<style>
 		* {
@@ -60,9 +60,39 @@
 			fill: #55f;
 			font-size: 36px;
 		}
+
+		.min-text, .max-text {
+			font-family: Roboto;
+			fill: black;
+			font-size: 15px;
+		}
 	</style>
 </head>
 <body>
+	<form>
+		<input type="checkbox" name="" value="elev">elev
+		<input type="checkbox" name="" value="Temp">Temp
+		<input type="checkbox" name="" value="TempC">TempC
+		<input type="checkbox" name="" value="Dewp">Dewp
+		<input type="checkbox" name="" value="Relh">Relh
+		<input type="checkbox" name="" value="Winds">Winds
+		<input type="checkbox" name="" value="SLP">SLP
+		<input type="checkbox" name="" value="Altimeter">Altimeter
+		<input type="checkbox" name="" value="Visibility">Visibility
+		<input type="checkbox" name="" value="TempHi24">TempHi24
+		<input type="checkbox" name="" value="TempLo24">TempLo24
+		<input type="checkbox" name="" value="RelhHi24">RelhHi24
+		<input type="checkbox" name="" value="RelhLo24">RelhLo24
+		<input type="checkbox" name="" value="GustHi24">GustHi24
+		<input type="checkbox" name="" value="RawsTemp12">RawsTemp12
+		<input type="checkbox" name="" value="RawsTemp13">RawsTemp13
+		<input type="checkbox" name="" value="RawsTemp14">RawsTemp14
+		<input type="checkbox" name="" value="RawsRelh12">RawsRelh12
+		<input type="checkbox" name="" value="RawsRelh13">RawsRelh13
+		<input type="checkbox" name="" value="RawsRelh14">RawsRelh14<br>
+		<input type="button" value="Update" onclick="updateCategories()">
+	</form>
+
 	<script>
 		//set up variables and functions we will need
 		var width = window.innerWidth,
@@ -80,19 +110,12 @@
 			.attr("width", width)
 			.attr("height", height);
 
-		svg.append("rect")
-			.attr("class", "background")
-		    .attr("width", width)
-		    .attr("height", height);
-
-		var g = svg.append("g");
-
 		//get hnx map data and plot it
 		d3.json("hnxSaZones.json", function(error, hnx) {
 			if (error) throw error;
 
 			var zones = topojson.feature(hnx, hnx.objects.hnxsaZones).features;
-			g.selectAll("path")
+			svg.selectAll("path")
 					.data(zones)
 				.enter()
 					.append("path")
@@ -100,7 +123,7 @@
 					.attr("d", pathFunc);
 
 			//make borders separately so they dont slow it down
-			g.append("path")
+			svg.append("path")
 		        .datum(topojson.mesh(hnx, hnx.objects.hnxsaZones, function(a, b) {
 				    return a !== b;
 			    }))
@@ -108,7 +131,7 @@
 		        .attr("d", pathFunc);
 
 			//label zones
-			g.selectAll("text")
+			svg.selectAll("text")
 				.data(zones)
 			  .enter().append("text")
 			  	.attr("id", "ids")
@@ -123,33 +146,92 @@
 				});
 		});
 
+//////////////////////////////////////////////////////////////
+///				main vis 																			//////
+///////////////////////////////////////////////////////////////
 
-		//check to see what data categories were selected
+		//globals:
+		var refreshed = false;
+		var index = 0;
+		var dt = 750;
+		var delay = 4000;
 		var categories = ["elev", "Temp", "TempC", "Dewp", "Relh",
-			"Winds", "SLP", "Altimeter", "Visibility", "TempHi24",
-			"TempLo24", "RelhHi24", "RelhLo24", "GustHi24",
-			"RawsTemp12", "RawsTemp13", "RawsTemp14", "RawsRelh12",
-			"RawsRelh13", "RawsRelh14"];
-		var dataUrl = "ba-simple-proxy/ba-simple-proxy.php?url=http://www.wrh.noaa.gov/hnx/JimBGmwXJList.php?extents=34.74,-121.4,38.36,-117.62&mode=native";
-		var firstTime = true;
-		var dt = 1000;
-		var delay = 5*dt;
-		d3.json(dataUrl, function(error, data) {
-			if (error) { console.log("There was an error loading the data." + error); }
+				"Winds", "SLP", "Altimeter", "Visibility", "TempHi24",
+				"TempLo24", "RelhHi24", "RelhLo24", "GustHi24",
+				"RawsTemp12", "RawsTemp13", "RawsTemp14", "RawsRelh12",
+				"RawsRelh13", "RawsRelh14"];
 
-			data = data.stations;
 
+		//main loop
+		main();
+
+
+		function main() {
+			//put all the vis on the svg, make the heatmap, cycle through
+			//changing opacity on the categories selected (default all)
+			initializeAll();
 			makeLegend();
-
-			var i = 0;
-			cycle(i, data);
+			cycle();
+			index++;
 			setInterval(function() {
-						i++;
-						cycle(i, data);
+						if (refreshed) {
+							index = 0;
+							refreshed = false;
+						}
+						cycle();
+						index++;
 					}, 2*dt + delay);
-		});
+		}
+
+
+		function updateCategories() {
+			//run when user clicks "update" - changes categories
+			//list to whatever they selected, then cleans svg
+			refreshed = true;
+			categories = [];
+			var checked = d3.selectAll("input:checked")[0];
+			for (var i = 0; i < checked.length; i++){
+				categories.push(checked[i].value)
+			}
+
+			cleanSVG();
+		}
+
+
+		function cleanSVG() {
+			//make everything in the vis opaque again
+			d3.selectAll("circle")
+				.style("opacity", 0);
+
+			d3.selectAll(".min-text")
+				.style("opacity", 0);
+
+			d3.selectAll(".max-text")
+				.style("opacity", 0);
+
+			d3.selectAll(".category-text")
+				.style("opacity", 0);
+		}
+
+
+		function initializeAll() {
+			//get the data and run initialize() for each category
+			var dataUrl = "ba-simple-proxy/ba-simple-proxy.php?url=http://www.wrh.noaa.gov/hnx/JimBGmwXJList.php?extents=34.74,-121.4,38.36,-117.62&mode=native";
+			d3.json(dataUrl, function(error, data) {
+				if (error) { console.log("There was an error loading the data." + error); }
+
+				data = data.stations;
+
+				for (var i = 0; i < categories.length; i++) {
+					initialize(data, categories[i])
+				}
+
+			});
+		}
+
 
 		function makeLegend() {
+			//make a heatmap bar to show what the data represents
 			var numRects = 100;
 			var rectsData = [];
 			for (var i = 0; i < numRects; i++) {
@@ -161,7 +243,7 @@
 					.domain([0, numRects - 1])
 					.range([0, 255]);
 
-			g.selectAll("rect.heatmap")
+			svg.selectAll("rect.heatmap")
 					.data(rectsData)
 				.enter()
 					.append("rect")
@@ -176,27 +258,31 @@
 						return "rgb(" + num + ", 0, " + (255 - num) + ")";
 					});
 		}
-		function cycle(index, dataFull) {
-			//pick next data category
-			var category = categories[index % categories.length];
 
-			initialize(dataFull, category);
 
-			g.selectAll("#above")
+		function cycle() {
+			//pick next data category, make it opacity 1 and the
+			//one before it opacity 0 in a smooth transition
+			var nextCategory = categories[index % categories.length];
+			var previousCategory = categories[(index-1) % categories.length];
+
+			svg.selectAll("#" + previousCategory)		//above
 				.transition()
 					.duration(dt)
-					.style("opacity", 0)
-					.remove();
+					.style("opacity", 0);
 
-			g.selectAll("#below")
-				.attr("id", "above")
+			svg.selectAll("#" + nextCategory)		//below
 				.transition()
 					.duration(dt)
 					.style("opacity", 1);
 		}
 
+
 		function initialize(dataFull, name) {
-			//make scale
+			//from the data, plot the heatmapped dots in their
+			//coordinates and start them off opacity 0.
+			//also display some text for what the colors mean
+			//and what the data is about
 			var min = d3.min(dataFull, function(d) {
 				return +( eval("d." + name) ); //+ makes it an int, eval makes string a var
 			});
@@ -219,14 +305,14 @@
 			//display name of category
 			var textHeight = height/15;
 			var categoryTextWidth = width/4;
-			var text = g.selectAll("text#below.category-text")
+			var text = svg.selectAll("text#" + name + ".category-text")
 					.data([0]);
 
 			text
 				.enter()
 					.append("text")
 					.attr("class", "category-text")
-					.attr("id", "below")
+					.attr("id", name)
 					.attr("x", categoryTextWidth)
 					.attr("y", textHeight)
 					.text(name)
@@ -236,14 +322,14 @@
 					.text(name);
 
 			//show a legend for the color map
-			var minText = g.selectAll("text#below.min-text")
+			var minText = svg.selectAll("text#" + name + ".min-text")
 					.data([0]);
 
 			minText
 				.enter()
 					.append("text")
 					.attr("class", "min-text")
-					.attr("id", "below")
+					.attr("id", name)
 					.attr("x", 2*categoryTextWidth)
 					.attr("y", textHeight)
 					.text(min)
@@ -252,14 +338,14 @@
 			minText
 				.text(min);
 
-			var maxText = g.selectAll("text#below.max-text")
+			var maxText = svg.selectAll("text#" + name + ".max-text")
 					.data([0]);
 
 			maxText
 				.enter()
 					.append("text")
 					.attr("class", "max-text")
-					.attr("id", "below")
+					.attr("id", name)
 					.attr("x", 3*categoryTextWidth)
 					.attr("y", textHeight)
 					.text(max)
@@ -268,40 +354,8 @@
 			maxText
 				.text(max);
 
-			// var numRects = 100;
-			// var rectsData = [];
-			// var spacing = (max - min)/numRects;
-			// for (var i = 0; i < numRects; i++) {
-			// 	rectsData.push(min + spacing*i);
-			// }
-			// rects = g.selectAll("rect.heatmap")
-			// 		.data(rectsData);
-			//
-			// rects
-			// 	.enter()
-			// 		.append("rect")
-			// 		.attr("class", name)
-			// 		.attr("id", "changing")
-			// 		.attr("x", function(d, i) {
-			// 			return 2.2*categoryTextWidth + i*(.75*categoryTextWidth/numRects);
-			// 		})
-			// 		.attr("y", textHeight/2)
-			// 		.attr("width", categoryTextWidth/numRects)
-			// 		.attr("height", textHeight/2)
-			// 		.attr("fill", function(d) {
-			// 			var num = Math.round(colorScale(d));
-			// 			return "rgb(" + num + ", 0, " + (255 - num) + ")";
-			// 		})
-			// 		.style("opacity", 0)
-			//
-			// rects
-			// 		.attr("fill", function(d) {
-			// 			var num = Math.round(colorScale(d));
-			// 			return "rgb(" + num + ", 0, " + (255 - num) + ")";
-			// 		})
-
 			//add data vis with class 'name' and opacity 0
-			var circs = g.selectAll("circle#below." + name)
+			var circs = svg.selectAll("circle." + name)
 					.data(dataFull);
 
 			circs
@@ -314,7 +368,7 @@
 							return "undefined";
 						}
 					})
-					.attr("id", "below")
+					.attr("id", name)
 					.attr("cx", function(d) {
 						return projectionFunc([d.longitude, d.latitude])[0]
 					})
@@ -359,9 +413,12 @@
 					.remove()
 
 			//the ones that had no data
-			g.selectAll("circle.undefined")
+			svg.selectAll("circle.undefined")
 					.remove();
 		}
+
+
 	</script>
+
 </body>
 </html>
