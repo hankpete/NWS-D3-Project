@@ -213,19 +213,18 @@
 				.style("opacity", 0);
 		}
 
-
+		var debug;
 		function initializeAll() {
 			//get the data and run initialize() for each category
 			var dataUrl = "ba-simple-proxy/ba-simple-proxy.php?url=http://www.wrh.noaa.gov/hnx/JimBGmwXJList.php?extents=34.74,-121.4,38.36,-117.62&mode=native";
 			d3.json(dataUrl, function(error, data) {
 				if (error) { console.log("There was an error loading the data." + error); }
 
-				data = data.stations;
+				debug = data.stations;
 
 				for (var i = 0; i < categories.length; i++) {
-					initialize(data, categories[i])
+					initialize(data.stations, categories[i])
 				}
-
 			});
 		}
 
@@ -278,28 +277,65 @@
 		}
 
 
+		function average(data) {
+			//returns mean of data
+			var sum = 0;
+			for (var i = 0; i < data.length; i++) {
+				sum += data[i];
+			}
+			var average = sum/data.length;
+			return average;
+		}
+
+
 		function initialize(dataFull, name) {
 			//from the data, plot the heatmapped dots in their
 			//coordinates and start them off opacity 0.
 			//also display some text for what the colors mean
 			//and what the data is about
-			var min = d3.min(dataFull, function(d) {
-				return +( eval("d." + name) ); //+ makes it an int, eval makes string a var
-			});
-			var max = d3.max(dataFull, function(d) {
-				return +( eval("d." + name) );
-			});
+			var dataList = [];
+			var newNum;
+			for (var i = 0; i < dataFull.length; i++) {
+				newNum = eval("dataFull[i]." + name);
+				if (typeof newNum == "string" && newNum != "") {
+					dataList.push( parseFloat(newNum) );
+				}
+			}
+
+			var avg = average(dataList);
+
+			var diffs = [];
+			for (var i = 0; i < dataList.length; i++) {
+				diff = Math.abs(dataList[i] - avg)
+				diffs.push( Math.pow(diff, 2) );
+			}
+			var sum = 0;
+			for (var i = 0; i < diffs.length; i++) {
+				sum += diffs[i];
+			}
+			var stdv = Math.sqrt(sum/diffs.length);
+
+			dataList.sort( function(a, b) { return a-b; });
+
+			for (var i = 0; i < dataList.length; i++) {
+				if (dataList[i] > (avg - 3*stdv)) {
+					var min = dataList[i];
+					break;
+				}
+			}
+			for (var i = 0; i < dataList.length; i++) {
+				if (dataList[dataList.length - i - 1] < (avg + 3*stdv)) {
+					var max = dataList[dataList.length - i - 1];
+					break;
+				}
+			}
 
 			var colorScale = d3.scale.linear()
 					.domain([min, max])
 					.range([0, 255]);
 
 			// var radiusScale =	d3.scale.linear()
-			// 				.domain([d3.min(dataFull, function(d) {
-			// 					return +( eval("d." + name) );
-			// 					}), d3.max(dataFull, function(d) {
-			// 						return +( eval("d." + name) );
-			// 				 	})]) //+ makes it an int, eval makes string a var
+			// 				.domain([min, max])
 			// 				.range([2, 10]);
 
 			//display name of category
@@ -378,9 +414,12 @@
 					// .attr("r", function(d) {
 					// 	return radiusScale(eval("d." + name));
 					// })
-					.attr("r", 7)
+					.attr("r", 8)
 					.attr("fill", function(d) {
 						var num = Math.round(colorScale(eval("d." + name)));
+						if (num < 0 || num > 255) {
+							return "rgb(0, 0, 0)";
+						}
 						return "rgb(" + num + ", 0, " + (255 - num)+ ")";
 					})
 					.style("opacity", 0);
@@ -404,6 +443,9 @@
 					// })
 					.attr("fill", function(d) {
 						var num = Math.round(colorScale(eval("d." + name)));
+						if (num < 0 || num > 255) {
+							return "rgb(0, 0, 0)";
+						}
 						return "rgb(" + num + ", 0, " + (255 - num)+ ")";
 					})
 					.style("opacity", 0);
