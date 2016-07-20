@@ -201,6 +201,24 @@
 		?>
 	</div>
 
+	<div id="radiusMin-div" style="display:none">
+		<?php
+			$radiusMin = $_GET[ "radiusMin" ];
+			echo "<p>";
+			echo htmlspecialchars($radiusMin);
+			echo "</p>";
+		?>
+	</div>
+
+	<div id="radiusMax-div" style="display:none">
+		<?php
+			$radiusMax = $_GET[ "radiusMax" ];
+			echo "<p>";
+			echo htmlspecialchars($radiusMax);
+			echo "</p>";
+		?>
+	</div>
+
 	<script>
 		//begin by getting the variables put into DOM by form/php
 
@@ -268,6 +286,15 @@
 		//set catTextColor
 		div = document.getElementById("catTextColor-div");
 		var catTextColor = div.children[0].textContent;
+
+		//set radiusMin
+		div = document.getElementById("radiusMin-div");
+		var radiusMin = parseFloat(div.children[0].textContent);
+
+		//set radiusMax
+		div = document.getElementById("radiusMax-div");
+		var radiusMax = parseFloat(div.children[0].textContent);
+
 
 
 
@@ -546,16 +573,14 @@
 					.domain([min, max])
 					.range([0, 255]);
 
-			// var radiusScale =	d3.scale.linear()
-			// 				.domain([min, max])
-			// 				.range([2, 10]);
+			var radiusScale =	d3.scale.linear()
+							.domain([min, max])
+							.range([radiusMin, radiusMax]);
 
 
 			//add data vis with class 'name' and opacity 0
-			var circs = gVis.selectAll("circle." + name)
-					.data(dataFull);
-
-			circs
+			gVis.selectAll("circle." + name)
+					.data(dataFull)
 				.enter()
 					.append("circle")
 					.attr("class", function(d) {
@@ -572,36 +597,18 @@
 					.attr("cy", function(d) {
 						return projectionFunc([d.longitude, d.latitude])[1]
 					})
-					// .attr("r", function(d) {
-					// 	return radiusScale(eval("d." + name));
-					// })
-					.attr("r", radius)
-					.attr("fill", function(d) {
-						var num = Math.round(colorScale(eval("d." + name)));
-						if (num < 0 || num > 255) {
-							return "rgb(0, 0, 0)";
-						}
-						return "rgb(" + num + ", 0, " + (255 - num)+ ")";
-					})
-					.style("opacity", 0);
-
-			circs
-					.attr("class", function(d) {
-						if (eval("d." + name)) {
-							return name;
+					.attr("r", function(d) {
+						var r = radiusScale( eval("d." + name) );
+						if (r) {		//make sure its not one of the undefined
+							if (r > radiusMax || r < radiusMin) {
+								return 1;
+							} else {
+								return r;
+							}
 						} else {
-							return "undefined";
+							return 0;
 						}
 					})
-					.attr("cx", function(d) {
-						return projectionFunc([d.longitude, d.latitude])[0]
-					})
-					.attr("cy", function(d) {
-						return projectionFunc([d.longitude, d.latitude])[1]
-					})
-					// .attr("r", function(d) {
-					// 	return radiusScale(eval("d." + name));
-					// })
 					.attr("fill", function(d) {
 						var num = Math.round(colorScale(eval("d." + name)));
 						if (num < 0 || num > 255) {
@@ -610,22 +617,15 @@
 						return "rgb(" + num + ", 0, " + (255 - num)+ ")";
 					})
 					.style("opacity", 0);
-
-			circs
-				.exit()
-					.remove()
-
 			//the ones that had no data
-			svg.selectAll("circle.undefined")
+			gVis.selectAll("circle.undefined")
 					.remove();
 
 			//display name of category
 			var textHeight = height/15;
 			var categoryTextWidth = width/4;
-			var text = gVis.selectAll("text#" + name + ".category-text")
-					.data([0]);
-
-			text
+			gVis.selectAll("text#" + name + ".category-text")
+					.data([0])
 				.enter()
 					.append("text")
 					.attr("class", "category-text")
@@ -636,14 +636,9 @@
 					.text(name)
 					.style("opacity", 0);
 
-			text
-					.text(name);
-
 			//show a legend for the color map
-			var minText = gVis.selectAll("text#" + name + ".min-text")
-					.data([0]);
-
-			minText
+			gVis.selectAll("text#" + name + ".min-text")
+					.data([0])
 				.enter()
 					.append("text")
 					.attr("class", "min-text")
@@ -653,14 +648,8 @@
 					.attr("fill", minTextColor)
 					.text(min)
 					.style("opacity", 0);
-
-			minText
-				.text(min);
-
-			var maxText = gVis.selectAll("text#" + name + ".max-text")
-					.data([0]);
-
-			maxText
+			gVis.selectAll("text#" + name + ".max-text")
+					.data([0])
 				.enter()
 					.append("text")
 					.attr("class", "max-text")
@@ -670,9 +659,6 @@
 					.attr("fill", maxTextColor)
 					.text(max)
 					.style("opacity", 0);
-
-			maxText
-				.text(max);
 		}
 
 
