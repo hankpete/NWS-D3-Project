@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>HNX WebCam Viewer</title>
+	<script src="d3/d3.js"></script>
+	<script src="d3/d3-queue.js"></script>
+	<script src="d3/topojson.js"></script>
+	<style>
+
+		body
+		{	
+			height: 100%;
+			width: 100%;
+			margin: 0;
+			float: left;
+			background-color:white;
+			overflow:hidden;
+		}
+
+		div#map
+		{
+			position:absolute;
+			top:50%;
+			left:0%;
+			height:50%;
+			width:20%;
+			stroke-width: .5px;
+			stroke:black;
+			stroke-opacity:100%;
+			pointer-events: all;
+			z-index:1000;
+		}
+
+		div#cams
+		{
+			position:absolute;
+			top:0%;
+			left:0%;
+			height:100%;
+			width:100%;
+			z-index:-1000;			
+		}
+
+		.zoom 
+		{
+			fill: #ccc;
+			cursor: pointer;
+		}
+
+		.zoom.active 
+		{
+			fill: gray;
+		}
+
+		.mesh 
+		{
+			fill: none;
+			stroke: #fff;
+			stroke-linejoin: round;
+		}
+
+		#zone-borders 
+		{
+			fill: none;
+			stroke-width: 1px;
+			stroke-linejoin: round;
+			stroke-linecap: round;
+			pointer-events: none;
+		}
+	</style>
+</head>
+<body>
+
+<div id="map"></div>
+<div id="cams"></div>
+
+<script>
+	//gobal vars
+	var width = screen.width
+	var height = screen.height
+	var active
+	var activePoint
+
+	var inactiveCirc = "white"
+	var activeCirc = "red"
+	var inactiveRad = 2
+	var activeRad = 15
+
+	var JsonToMap
+	var b,s,t;
+	var projection = d3.geo.mercator().scale(1).translate([0, 0])
+	var cwaPath = d3.geo.path().projection(projection)	
+	var scaleFactor = .8 //1=100% .5=50%, etc.
+	var zoomTime = 1000
+
+	var map = d3.select("#map").append("svg")
+		.attr("width", "100%")
+		.attr("height", "100%")
+	var gMap = map.append("g")
+
+	var cams = d3.select("#cams").append("svg")
+		.attr("width", "100%")
+		.attr("height", "100%")
+	var gCams = cams.append("g");
+
+	var camJson = [];
+	var mapWidth = document.getElementById("map").offsetWidth
+	var mapHeight = document.getElementById("map").offsetHeight
+
+	var index = 0;
+	var transitionTime = 2000;
+	var delay = 5000;
+
+//functions
+function loadCwaMap()
+{
+	//console.log("in loadCwaMap");
+	//project to bounding box http://bl.ocks.org/mbostock/4707858
+	//zoom to bounding box http://bl.ocks.org/mbostock/4699541
+	//d3.json("CWAs.json", function(error, us) 
+	//d3.json("CAzones.json", function(error, us) 
+	d3.json("hnxSaZones.json", function(error, us)
+	{
+		                  //.mesh/feature
+		JsonToMap = topojson.mesh(us, us.objects.hnxsaZones)
+
+		getBST(JsonToMap,mapWidth,mapHeight)
+		projection.scale(s).translate(t);
+
+
+
+		gMap.selectAll("path")
+			.data(topojson.feature(us, us.objects.hnxsaZones).features)
+			.enter().append("path")
+			.attr("id",  function(d) { return d.id; })
+			.attr("zone",  function(d) { return d.properties.ZONE; })
+			.attr("class", "zoom")
+			.attr("d", cwaPath)
+			.on("click", zoomToZone);
+	}
+	);
+}
+
+
+function getLST(d) //Boundingbox, Scale, Transform
+{
+	lon=projection([d.lon, d.lat])[0]
+	lat=projection([d.lon, d.lat])[1]
+	sf = scaleFactor / Math.max( (lon/width, lat/height))   //calculate scale based on ratio of bounding box to screen dimensions
+	console.log("scale factor: ",sf)
+	//s=50
+	s=sf*5
+	t=[width/2 -lon*s,height/2-lat*s]
+	return[t,s]
+}
+
+function zoomTo(trans, scale) 
+{ 	
+	gMap.transition().duration(zoomTime).attr("transform","translate(" + trans + ")"+ "scale(" + scale + ")" )
+}
+
+function getBST(JsonToMap,divWidth,divHeight) //Boundingbox, Scale, Transform
+{
+	//compute bounding box b of JsonToMap (d)
+	b = cwaPath.bounds(JsonToMap)
+
+	//calculate scale based on ratio of bounding box to screen dimensions
+	s = scaleFactor / Math.max( (b[1][0] - b[0][0]) / (divWidth), (b[1][1] - b[0][1]) / (divHeight) )
+
+	//translate to point in bounding box /2 for center,
+	t = [(divWidth - s * (b[1][0] + b[0][0])) / 2, (divHeight - s * (b[1][1] + b[0][1])) / 2] 
+	return[t,s]
+}
+
+function zoomToZone(d)
+{
+//console.log("lat:",lat," lon:",lon)
+console.log("d:",d)
+	console.log("in zoomToZone")
+	st=getBST(d,mapWidth,mapHeight)
+	zoomTo(st[0],st[1])
+	if (active === d) return reset();
+	gMap.selectAll(".active").classed("active", false);
+	d3.select(this).classed("active", active = d);
+}
+
+function reset() 
+{
+	gMap.selectAll(".active").classed("active", active = false);
+	gMap.transition().duration(zoomTime).attr("transform", "");
+}
+
+
+function mapCamLocations() 
+{
+	//console.log("in MapCamLocations");
+	gMap.selectAll("circle.camPoints")
+		.data(camJson)
+		.enter()
+		.append("circle")
+			.classed("camPoints",true)
+ 				.attr("id", function(d, i) {return "cam-" + i;})
+			    	.attr("cx", function(d) {return projection([d.lon,d.lat])[0];})
+			    	.attr("cy", function(d) {return projection([d.lon,d.lat])[1];})
+			    	.attr("r", inactiveRad)
+				.attr("fill", inactiveCirc);
+}
+
+function loadCamImages()
+{
+	//console.log("in loadCamImages");
+	//put cams on svg transparent
+	gCams.selectAll("image.cam")
+		.data(camJson)
+	  	.enter()
+		.append("image")
+		.classed("cam", true)
+		.attr("id", function(d, i) {
+			return "cam-" + i;
+		})
+		.attr("x", 0)
+		.attr("y", 0)
+		.attr("xlink:href", function(d) {return d.file; })
+		.attr("width", width)
+		.attr("height", height)
+		.style("opacity", 0);
+}
+
+function cycleCamImages() 
+{
+	var next = index;
+	var previous = index-1;
+	var camsNum = camJson.length;
+	//console.log("in cycleCamImages")
+	//console.log("index: ", index)
+	//console.log("next: ", next)
+	//console.log("previous: ", previous)
+
+	//previous cam
+	gMap.selectAll( "circle#cam-" + (previous % camsNum) )
+		.transition()
+			.duration(transitionTime)
+			.attr("fill", inactiveCirc)
+			.attr("r", inactiveRad);
+
+	gCams.selectAll( "image#cam-" + (previous % camsNum) )
+		.transition()
+			.duration(transitionTime)
+			.style("opacity", 0);
+
+	//next cam
+	gMap.selectAll( "circle#cam-" + (next % camsNum) )
+		.transition()
+			.duration(transitionTime)
+			.attr("fill", activeCirc)
+			.attr("r", activeRad);
+	gCams.selectAll( "image#cam-" + (next % camsNum) )
+		.transition()
+			.duration(transitionTime)
+			.style("opacity", 1);
+	index++;
+}
+
+function main(error,results)
+{
+	if (error) throw error
+	//console.log("in main")
+	camJson=results
+	//console.log("camJson: ",camJson)
+	loadCwaMap()
+	loadCamImages()
+}
+// end functions
+
+//main
+//load webCamLocations.json plotting and cycling
+d3.queue(1).defer(d3.json, 'webCamLocations.json').await(main)
+setInterval(
+	function()
+	{
+		mapCamLocations()
+		cycleCamImages();
+	}, 
+	transitionTime + delay
+);
+
+</script>
+</body>
+</html>
