@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>D3 Test</title>
+  <!-- Latest compiled and minified CSS -->
+  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+
+  <!-- jQuery library -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+
+  <!-- Latest compiled JavaScript -->
+  <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+  <meta charset="utf-8">
+</head>
+<body>
+  <div class="container">
+    <h1>Set Options for Vis #2</h1>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+  		  <h3>Presets</h3>
+      </div>
+      <div class="panel-body">
+        <div class="list-group">
+          <a class="list-group-item" href="http://localhost/my_programs/D3_Work/main_project2.php?Temp=on&TempC=on&Dewp=on&Relh=on&Winds=on&TempHi24=on&TempLo24=on&RelhHi24=on&RelhLo24=on&radiusMin=1&radiusMax=5&circleOpacity=.75&dt=1500&bgColor=%23000&zoneColor=%23fff&zoneColorActive=%23aaf&borderColor=%23000&minTextColor=%2355f&maxTextColor=%2355f&catTextColor=%2355f">Henry's Presets</a>
+        </div>
+      </div>
+    </div>
+    <form role="form" action="main_project2.php" method="get">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+		        <h3>Data Options</h3>
+        </div>
+        <div class="panel-body">
+          <div class="checkbox">
+            <label><input type="checkbox" name="elev"> elev</label>
+            <label><input type="checkbox" name="Temp"> Temp</label>
+            <label><input type="checkbox" name="TempC"> TempC</label>
+            <label><input type="checkbox" name="Dewp"> Dewp</label>
+            <label><input type="checkbox" name="Relh"> Relh</label>
+            <label><input type="checkbox" name="Winds"> Winds</label>
+            <label><input type="checkbox" name="SLP"> SLP</label>
+            <label><input type="checkbox" name="Altimeter"> Altimeter</label>
+            <label><input type="checkbox" name="Visibility"> Visibility</label>
+          </div>
+          <div class="checkbox">
+            <label><input type="checkbox" name="TempHi24"> TempHi24</label>
+            <label><input type="checkbox" name="TempLo24"> TempLo24</label>
+            <label><input type="checkbox" name="RelhHi24"> RelhHi24</label>
+            <label><input type="checkbox" name="RelhLo24"> RelhLo24</label>
+            <label><input type="checkbox" name="GustHi24"> GustHi24</label>
+          </div>
+          <div class="checkbox">
+            <label><input type="checkbox" name="RawsTemp12"> RawsTemp12</label>
+            <label><input type="checkbox" name="RawsTemp13"> RawsTemp13</label>
+            <label><input type="checkbox" name="RawsTemp14"> RawsTemp14</label>
+            <label><input type="checkbox" name="RawsRelh12"> RawsRelh12</label>
+            <label><input type="checkbox" name="RawsRelh13"> RawsRelh13</label>
+            <label><input type="checkbox" name="RawsRelh14"> RawsRelh14</label>
+          </div>
+        </div>
+      </div>
+      <div class="panel panel-default">
+    		<div class="panel-heading">
+    		  <h3>Data Circles</h3>
+        </div>
+        <div class="panel-body">
+          <div class="form-inline">
+            <label>Minimum Radius:</label>
+            <input type="text" name="radiusMin" value="1" class="form-control">
+            <label>Maximum Radius:</label>
+            <input type="text" name="radiusMax" value="5" class="form-control"><br />
+        		<label>Opacity:</label>
+        		<input type="text" name="circleOpacity" value=".75" class="form-control">
+          </div>
+        </div>
+      </div>
+      <div class="panel panel-default">
+    		<div class="panel-heading">
+    		  <h3>Transitioning</h3>
+        </div>
+        <div class="panel-body">
+          <div class="form-inline">
+            <label>Time Per Data:</label>
+            <input type="text" name="dt" value="1500" class="form-control">
+        </div>
+      </div>
+    	<div class="panel panel-default">
+    		<div class="panel-heading">
+          <h3>Color Scheme</h3>
+        </div>
+        <div class="panel-body">
+          <h4><strong>Shapes</strong></h3>
+          <div class="form-inline">
+        		<label>Background Color:</label>
+        		<input type="text" name="bgColor" value="#fff" class="form-control">
+        		<label>Zone Color:</label>
+        		<input type="text" name="zoneColor" value="#aaa" class="form-control"><br />
+            <label>Zone Active Color:</label>
+            <input type="text" name="zoneColorActive" value="#aaf" class="form-control">
+        		<label>Border Color:</label>
+        		<input type="text" name="borderColor" value="#fff" class="form-control">
+          </div>
+          <h4><strong>Text</strong></h4>
+          <div class="form-inline">
+            <label>Min Text Color:</label>
+            <input type="text" name="minTextColor" value="#000" class="form-control"><br />
+            <label>Max Text Color:</label>
+            <input type="text" name="maxTextColor" value="#000" class="form-control">
+            <label>Category Text Color:</label>
+            <input type="text" name="catTextColor" value="#55f" class="form-control">
+          </div>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-default">Submit</button>
+    </form>
+  </div>
+</body>
+</html>

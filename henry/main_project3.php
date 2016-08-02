@@ -27,7 +27,209 @@
 	</style>
 </head>
 <body>
+<div id="category-div" style="display: none;">
+  <?php
+    $cats = ["elev", "Temp", "TempC", "Dewp", "Relh",
+				"Winds", "SLP", "Altimeter", "Visibility", "TempHi24",
+				"TempLo24", "RelhHi24", "RelhLo24", "GustHi24",
+				"RawsTemp12", "RawsTemp13", "RawsTemp14", "RawsRelh12",
+				"RawsRelh13", "RawsRelh14"];
+    $catsLength = count($cats);
+
+    for ($i = 0; $i < $catsLength; $i++)
+    {
+      if( $_GET[ $cats[$i] ] == "on" )
+      {
+				echo "<p>";
+        echo htmlspecialchars($cats[$i]);
+				echo "</p>";
+			}
+    }
+  ?>
+</div>
+
+<div id="dt-div" style="display: none;">
+	<?php
+		$dt = $_GET[ "dt" ];
+		echo "<p>";
+		echo htmlspecialchars($dt);
+		echo "</p>";
+	?>
+</div>
+
+<div id="delay-div" style="display: none;">
+	<?php
+		$delay = $_GET[ "delay" ];
+		echo "<p>";
+		echo htmlspecialchars($delay);
+		echo "</p>";
+	?>
+</div>
+
+<div id="showIds-div" style="display: none;">
+	<?php
+		$showIds = $_GET[ "showIds" ];
+		echo "<p>";
+		echo htmlspecialchars($showIds);
+		echo "</p>";
+	?>
+</div>
+
+<div id="showCities-div" style="display: none;">
+	<?php
+		$showCities = $_GET[ "showCities" ];
+		echo "<p>";
+		echo htmlspecialchars($showCities);
+		echo "</p>";
+	?>
+</div>
+
+<div id="bgColor-div" style="display: none;">
+	<?php
+		$bgColor = $_GET[ "bgColor" ];
+		echo "<p>";
+		echo htmlspecialchars($bgColor);
+		echo "</p>";
+	?>
+</div>
+
+<div id="zoneColor-div" style="display: none;">
+	<?php
+		$zoneColor = $_GET[ "zoneColor" ];
+		echo "<p>";
+		echo htmlspecialchars($zoneColor);
+		echo "</p>";
+	?>
+</div>
+
+<div id="borderColor-div" style="display: none;">
+	<?php
+		$borderColor = $_GET[ "borderColor" ];
+		echo "<p>";
+		echo htmlspecialchars($borderColor);
+		echo "</p>";
+	?>
+</div>
+
+<div id="zoneTextColor-div" style="display:none">
+	<?php
+	 	$zoneTextColor = $_GET[ "zoneTextColor" ];
+		echo "<p>";
+		echo htmlspecialchars($zoneTextColor);
+		echo "</p>";
+	?>
+</div>
+
+<div id="cityTextColor-div" style="display:none">
+	<?php
+		$cityTextColor = $_GET[ "cityTextColor" ];
+		echo "<p>";
+		echo htmlspecialchars($cityTextColor);
+		echo "</p>";
+	?>
+</div>
+
+<div id="inactiveRad-div" style="display:none">
+	<?php
+		$inactiveRad = $_GET[ "inactiveRad" ];
+		echo "<p>";
+		echo htmlspecialchars($inactiveRad);
+		echo "</p>";
+	?>
+</div>
+
+<div id="activeRad-div" style="display:none">
+	<?php
+		$activeRad = $_GET[ "activeRad" ];
+		echo "<p>";
+		echo htmlspecialchars($activeRad);
+		echo "</p>";
+	?>
+</div>
+
+<div id="inactiveCirc-div" style="display:none">
+	<?php
+		$inactiveCirc = $_GET[ "inactiveCirc" ];
+		echo "<p>";
+		echo htmlspecialchars($inactiveCirc);
+		echo "</p>";
+	?>
+</div>
+
+<div id="activeCirc-div" style="display:none">
+	<?php
+		$activeCirc = $_GET[ "activeCirc" ];
+		echo "<p>";
+		echo htmlspecialchars($activeCirc);
+		echo "</p>";
+	?>
+</div>
+
 <script>
+	//begin by getting the variables put into DOM by form/php
+
+	//set categories variable from the form
+	var div = document.getElementById("category-div");
+	var myData = div.children;
+
+	var cats = [];
+	for (var i = 0; i < myData.length; i++) {
+		cats.push(myData[i].textContent);
+	}
+
+	//set transitionTime
+	div = document.getElementById("dt-div");
+	var transitionTime = parseInt(div.children[0].textContent);
+
+	//set delay
+	div = document.getElementById("delay-div");
+	var delay = parseInt(div.children[0].textContent);
+
+	//set showIds
+	div = document.getElementById("showIds-div");
+	var showIds = div.children[0].textContent;
+
+	//set showCities
+	div = document.getElementById("showCities-div");
+	var showCities = div.children[0].textContent;
+
+	//set bgColor
+	div = document.getElementById("bgColor-div");
+	var bgColor  = div.children[0].textContent;
+
+	//set zoneColor
+	div = document.getElementById("zoneColor-div");
+	var zoneColor  = div.children[0].textContent;
+
+	//set borderColor
+	div = document.getElementById("borderColor-div");
+	var borderColor = div.children[0].textContent;
+
+	//set zoneTextColor
+	div = document.getElementById("zoneTextColor-div");
+	var zoneTextColor = div.children[0].textContent;
+
+	//set cityTextColor
+	div = document.getElementById("cityTextColor-div");
+	var cityTextColor = div.children[0].textContent;
+
+	//set inactiveRad
+	div = document.getElementById("inactiveRad-div");
+	var inactiveRad = parseFloat(div.children[0].textContent);
+
+	//set activeRad
+	div = document.getElementById("activeRad-div");
+	var activeRad = parseFloat(div.children[0].textContent);
+
+	//set inactiveCirc
+	div = document.getElementById("inactiveCirc-div");
+	var inactiveCirc = div.children[0].textContent;
+
+	//set activeCirc
+	div = document.getElementById("activeCirc-div");
+	var activeCirc = div.children[0].textContent;
+
+
 
 	//set up variables and functions we will need
 	var width = window.innerWidth;
@@ -38,14 +240,6 @@
 	var yScale = d3.scale.linear()
 			.domain([0, 100])
 			.range([0, height]);
-
-	var bgColor = "#000";
-	var zoneColor = "#ccc";
-	var borderColor = "#000";
-	var inactiveCirc = "#22a";
-	var activeCirc = "#a22";
-	var inactiveRad = 5;
-	var activeRad = 7;
 
 	var scale = 4000;
 	var projectionFunc = d3.geo.mercator()	//world
@@ -199,15 +393,13 @@
 
 	//globals
 	var index = 0;
-	var transitionTime = 2000;
-	var delay = 2000;
 
 
 	function main(data) {
 		cycle(data);
 		setInterval(function() {
 			cycle(data);
-		}, transitionTime*3 + delay);
+		}, transitionTime*4 + 2*delay);
 	}
 
 
@@ -222,56 +414,52 @@
 
 		//keep track of transitions
 		var wait = 0;
-		var nextDuration = 0;
 
 
 		//previous cam go away
 		nextDuration = transitionTime;
 		gMap.selectAll( "circle#pt" + (previous % camsNum) )
 			.transition()		//1
-				.duration(nextDuration)
+				.duration(transitionTime)
 				.attr("fill", inactiveCirc)
 				.attr("r", inactiveRad);
 		gCams.selectAll( "#vis" + (previous % camsNum) )
 			.transition()		//1
-				.duration(nextDuration)
+				.duration(transitionTime)
 				.style("opacity", 0);
 		gCams.selectAll( "#stats" + (previous % camsNum) )
 			.transition()		//1
-				.duration(nextDuration)
+				.duration(transitionTime)
 				.style("opacity", 0);
-		wait += nextDuration;
+		wait += transitionTime;
 
 		//after that, go to next point
 		var location = [ data[next % camsNum].LON, data[next % camsNum].LAT ];
-		nextDuration = transitionTime;
 		gMap.selectAll( "circle#pt" + (next % camsNum) )
 			.transition()		//2
 				.delay(wait)	//after transition 1
-				.duration(nextDuration)
+				.duration(transitionTime)
 				.attr("fill", activeCirc)
 				.attr("r", activeRad);
 		zoomToPoint(location, wait);	//2
-		wait += nextDuration;
+		wait += transitionTime;
 
 		//show text while there
-		nextDuration = delay;
 		gCams.selectAll("#stats" + (next % camsNum) )
 			.transition()	//3
 				.delay(wait) 	//after 2
-				.duration(nextDuration)
+				.duration(transitionTime)
 				.style("opacity", 1);
-		wait += nextDuration;
+		wait += transitionTime + delay;
 
 		//go back to regular view and show cam
 		reset(wait) //4
-		nextDuration = transitionTime;
 		gCams.selectAll( "#vis" + (next % camsNum) )
 			.transition()	//4
 				.delay(wait)	//after 3
-				.duration(nextDuration)
+				.duration(transitionTime)
 				.style("opacity", 1);
-		wait += nextDuration;
+		wait += transitionTime + delay;
 
 		//!!!!
 		index++;
