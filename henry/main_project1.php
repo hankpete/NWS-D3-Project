@@ -4,6 +4,7 @@
 	<meta charset="utf-8">
 	<title>D3 Test</title>
 	<script src="d3/d3.min.js"></script>
+	<script src="d3/d3-queue.js"></script>
 	<script src="d3/topojson.min.js"></script>
 	<style>
 		* {
@@ -302,6 +303,37 @@
 		var width = window.innerWidth,
 			height = window.innerHeight;
 
+		//interactions:
+		d3.select("body")
+				.on("keydown", function() {
+						d3.event.preventDefault();
+						if (d3.event.keyCode == 80) {
+							//pause 'p' button hit
+							pause();
+						} else if (d3.event.keyCode == 39) {
+							//go to next on right arrow
+							var previous = (index - 1) % categories.length;
+							if (previous < 0) {
+								previous = categories.length + previous;
+							}
+							var previousCategory = categories[ previous ]
+							gVis.selectAll("#" + previousCategory)
+									.style("opacity", 0);
+							cycle();
+						} else if (d3.event.keyCode == 37) {
+							//go back on left arrow
+							var previous = (index - 1) % categories.length;
+							if (previous < 0) {
+								previous = categories.length + previous;
+							}
+							var previousCategory = categories[ previous ]
+							index -= 2;
+							gVis.selectAll("#" + previousCategory)
+									.style("opacity", 0);
+							cycle();
+						}
+					});
+
 		var projectionFunc = d3.geo.mercator()	//world
 			.scale(7000)
 			.center([-119.6, 36.3])	//hnx coords
@@ -373,16 +405,19 @@
 		///				main vis 								//////
 		////////////////////////////////////////
 
+		//initialize things before main
+		d3.queue()
+				.defer(useJsonData)
+				.await(function(error) {
+					if (error) {
+						console.log("There was an error in the queue: " + error);
+					}
+					main();
+				});
 
 
-		//main loop
-		var index = 0;
-		main();
-
-
-		function main() {
-			//put all the vis on the svg, make the heatmap, cycle through
-			//changing opacity on the categories selected (default all)
+		function useJsonData(callback) {
+			//get the json data and initialize all the circles before main()
 
 			//show "loading" while they wait
 			gMap.selectAll("text.loading")
@@ -395,11 +430,9 @@
 					.attr("fill", catTextColor)
 					.text(function(d) { return d; });
 
-			//get the data and run initialize() for each category
-			// var offlineData = "offlineData.json";
+			// var dataUrl = "offlineData.json";
 			var dataUrl = "ba-simple-proxy/ba-simple-proxy.php?url=http://www.wrh.noaa.gov/hnx/JimBGmwXJList.php?extents=34.74,-121.4,38.36,-117.62&mode=native";
 			d3.json(dataUrl, function(error, data) {
-			// d3.json(offlineData, function(error, data) {
 				if (error) { console.log("There was an error loading the data." + error); }
 
 				for (var i = 0; i < categories.length; i++) {
@@ -453,12 +486,37 @@
 					.style("opacity", 0)
 					.remove();
 
+			//callback for queue
+			callback(null);
+		}
+
+
+		var index = 0;
+		var isPaused = false;
+		function main() {
+			//put all the vis on the svg, make the heatmap, cycle through
+			//changing opacity on the categories selected (default all)
+
+			//initialize pause
+			gVis.selectAll("text#pause")
+					.data(["Paused."])
+				.enter()
+					.append("text")
+					.attr("id", "pause")
+					.attr("x", width/15)
+					.attr("y", height/2)
+					.attr("font-size", 40 + "px")
+					.attr("font-family", "Roboto")
+					.attr("fill", "red")
+					.text(function(d) { return d; })
+					.style("opacity", 0);
+
 			makeLegend();
 			cycle();
-			index++;
 			setInterval(function() {
-						cycle();
-						index++;
+						if(!isPaused) {
+							cycle();
+						}
 					}, 2*dt + delay);
 		}
 
@@ -496,8 +554,16 @@
 		function cycle() {
 			//pick next data category, make it opacity 1 and the
 			//one before it opacity 0 in a smooth transition
-			var nextCategory = categories[index % categories.length];
-			var previousCategory = categories[(index-1) % categories.length];
+			var next = (index) % categories.length;
+			if (next < 0) {
+				next = categories.length + next;
+			}
+			var nextCategory = categories[ next ]
+			var previous = (index - 1) % categories.length;
+			if (previous < 0) {
+				previous = categories.length + previous;
+			}
+			var previousCategory = categories[ previous ]
 
 			gVis.selectAll("#" + previousCategory)		//above
 				.transition()
@@ -513,6 +579,8 @@
 				.transition()
 					.duration(dt)
 					.style("opacity", circleOpacity);
+
+			index++;
 		}
 
 
@@ -662,6 +730,17 @@
 		}
 
 
+		function pause() {
+				if (isPaused) {
+					isPaused = false;
+					gVis.selectAll("text#pause")
+							.style("opacity", 0);
+				} else {
+					isPaused = true;
+					gVis.selectAll("text#pause")
+							.style("opacity", 1);
+				}
+		}
 	</script>
 
 </body>
