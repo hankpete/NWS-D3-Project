@@ -104,8 +104,31 @@
 	});
 
 	////////////NEW DATA/////////////////////
+
+	function getCats() {
+		//returns list of possible vars
+		var categories = [];
+		var catList = "";
+		$.getJSON('http://api.mesowest.net/v2/variables?callback=?',
+	  {
+		  // specify the request parameters here
+		  token:"04f0a7b44b8143f6b2f28475180b7dca"
+	  },
+	  function (data) {
+			//get all possible vars
+			data = data.VARIABLES;
+			for (var i = 0; i < data.length; i++) {
+				for (var key in data[i]) {
+					categories.push(key);
+				}
+			}
+			return categories;
+		});
+	}
+
+
 	var debug;
-	var categories = ["air_temp", "wind_speed"];
+	var categories = ["air_temp", "wind_speed", "relative_humidity"];
 	var catList = "";
 	for (var i = 0; i < categories.length; i++) {
 		catList += categories[i];
@@ -117,8 +140,11 @@
   {
 	  // specify the request parameters here
 		// state:"ca",
-		cwa:"hnx",
-	  within:1440,
+		// cwa:"hnx",
+		radius:"36.3,-119.6,125",
+		atttime:"201608121212",
+	  within:"60,60",
+		obtimezone:"local",
 		vars:catList,
 		units:"temp|F,speed|mps,height|ft,precip|in",
 	  token:"04f0a7b44b8143f6b2f28475180b7dca"
@@ -142,7 +168,7 @@
 	var maxTextColor = "#000";
 	var dt = 2000;
 	var delay = 1000;
-	var circleOpacity = .75;
+	var circleOpacity = .90;
 
 	var index = 0;
 	var isPaused = false;
@@ -270,6 +296,7 @@
 		}
 
 		var avg = average(dataMin);
+		console.log("avg " + avg);
 
 		var diffs = [];
 		for (var i = 0; i < dataMin.length; i++) {
@@ -281,11 +308,14 @@
 			sum += diffs[i];
 		}
 		var stdv = Math.sqrt(sum/diffs.length);
+		console.log("stdv " + stdv);
 
 		dataMin.sort( function(a, b) { return a.val-b.val; });
 
 		console.log(dataMin);
 
+		console.log(avg-3*stdv);
+		console.log(avg+3*stdv);
 		for (var i = 0; i < dataMin.length; i++) {
 			if (dataMin[i].val > (avg - 3*stdv)) {
 				var min = dataMin[i].val;

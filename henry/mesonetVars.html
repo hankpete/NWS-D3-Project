@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>Mesonet Test</title>
+	<script src="d3/jquery-3.1.0.min.js"></script>
+</head>
+<body>
+<script>
+	var debug;
+	var cats = [];
+	$.getJSON('http://api.mesowest.net/v2/variables?callback=?',
+  {
+	  // specify the request parameters here
+	  token:"04f0a7b44b8143f6b2f28475180b7dca"
+  },
+  function (data) {
+		debug = data;
+
+		data = data.VARIABLES;
+		for (var i = 0; i < data.length; i++) {
+			for (var key in data[i]) {
+				cats.push(key);
+			}
+		}
+
+		console.log(cats);
+	});
+</script>
+</body>
+</html>
